@@ -3,6 +3,24 @@ import { RaceEngine } from "../engine/raceEngine.js";
 
 const RACE_TICK_MS = 850;
 const MAX_LOG_ENTRIES = 10;
+const LANE_BASE_COLORS = Object.freeze({
+  hearts: [255, 94, 94],
+  clubs: [158, 223, 255],
+  diamonds: [167, 247, 176],
+  spades: [112, 112, 112]
+});
+
+function getLaneShadeColor(suitId, length, trackLength) {
+  const baseColor = LANE_BASE_COLORS[suitId] ?? [140, 140, 140];
+  const progress = trackLength === 0 ? 0 : length / trackLength;
+  const darkness = 0.08 + (progress * 0.55);
+
+  const [r, g, b] = baseColor.map((channel) => {
+    return Math.max(16, Math.round(channel * (1 - darkness)));
+  });
+
+  return `rgb(${r} ${g} ${b})`;
+}
 
 export class RaceScreen {
   constructor({
@@ -77,86 +95,81 @@ export class RaceScreen {
   }
 
   renderGrid(positions, checkpoints) {
-    this.gridEl.style.setProperty("--track-column-count", String(this.trackLength + 1));
-
-    const lengthHeaderCells = [];
-    const checkpointCells = [];
-
-    for (let length = 0; length <= this.trackLength; length += 1) {
-      const isFinish = length === this.trackLength;
-
-      let headerLabel = String(length);
-      if (length === 0) {
-        headerLabel = "S";
-      } else if (isFinish) {
-        headerLabel = "F";
-      }
-
-      lengthHeaderCells.push(`
-        <div class="length-header-cell${isFinish ? " finish" : ""}">${headerLabel}</div>
-      `);
-
-      if (length === 0) {
-        checkpointCells.push(`
-          <div class="track-cell checkpoint-slot start-gap" aria-hidden="true">-</div>
-        `);
-        continue;
-      }
-
-      const checkpoint = checkpoints[length - 1];
-      if (!checkpoint || !checkpoint.revealed) {
-        checkpointCells.push(`
-          <div class="track-cell checkpoint-slot face-down" title="Length ${length} checkpoint">?</div>
-        `);
-        continue;
-      }
-
-      const suit = getSuitById(checkpoint.suitId);
-      checkpointCells.push(`
-        <div class="track-cell checkpoint-slot ${suit.id}" title="Length ${length} flipped ${suit.name}">
-          ${suit.symbol}
-        </div>
-      `);
-    }
-
-    const guideRows = `
-      <div class="race-lane">
-        <div class="lane-label length-label">Lengths</div>
-        ${lengthHeaderCells.join("")}
-      </div>
-      <div class="race-lane">
-        <div class="lane-label checkpoint-label">Side Cards</div>
-        ${checkpointCells.join("")}
-      </div>
-    `;
-
-    const lanesMarkup = SUITS.map((suit) => {
-      const laneCells = [];
-
-      for (let length = 0; length <= this.trackLength; length += 1) {
-        const isFinish = length === this.trackLength;
-        const hasToken = positions[suit.id] === length;
-
-        const tokenMarkup = hasToken
-          ? `<div class="racer-token ${suit.id}" aria-label="${suit.name} racer">${suit.symbol}</div>`
-          : "";
-
-        laneCells.push(`
-          <div class="track-cell${isFinish ? " finish" : ""}" data-length="${length}">
-            ${tokenMarkup}
-          </div>
-        `);
-      }
-
+    const headerCellsMarkup = SUITS.map((suit) => {
       return `
-        <div class="race-lane">
-          <div class="lane-label">${suit.symbol} ${suit.name}</div>
-          ${laneCells.join("")}
+        <div class="track-header-cell suit-header ${suit.id}">
+          <span class="header-symbol">${suit.symbol}</span>
+          <span class="header-name">${suit.name}</span>
         </div>
       `;
     }).join("");
 
-    this.gridEl.innerHTML = `${guideRows}${lanesMarkup}`;
+    const rowMarkup = [];
+
+    for (let length = this.trackLength; length >= 0; length -= 1) {
+      const isFinish = length === this.trackLength;
+      const isStart = length === 0;
+
+      const lengthLabel = isFinish ? "FINISH" : (isStart ? "START" : `L${length}`);
+      const rowClasses = [
+        "track-row",
+        isFinish ? "finish-row" : "",
+        isStart ? "start-row" : ""
+      ].join(" ").trim();
+
+      let sideCardMarkup = "";
+      if (isStart || isFinish) {
+        sideCardMarkup = `<div class="track-cell side-card-cell no-card" aria-hidden="true">-</div>`;
+      } else {
+        const checkpoint = checkpoints[length - 1];
+        if (!checkpoint || !checkpoint.revealed) {
+          sideCardMarkup = `<div class="track-cell side-card-cell face-down" title="Length ${length} checkpoint">?</div>`;
+        } else {
+          const revealedSuit = getSuitById(checkpoint.suitId);
+          sideCardMarkup = `
+            <div class="track-cell side-card-cell ${revealedSuit.id}" title="Length ${length} flipped ${revealedSuit.name}">
+              ${revealedSuit.symbol}
+            </div>
+          `;
+        }
+      }
+
+      const laneCellsMarkup = SUITS.map((suit) => {
+        const hasToken = positions[suit.id] === length;
+        const laneColor = getLaneShadeColor(suit.id, length, this.trackLength);
+        const tokenMarkup = hasToken
+          ? `<div class="racer-token ${suit.id}" aria-label="${suit.name} racer">${suit.symbol}</div>`
+          : "";
+
+        return `
+          <div
+            class="track-cell lane-cell ${suit.id}${isFinish ? " finish" : ""}${isStart ? " start" : ""}"
+            style="background-color: ${laneColor};"
+            data-suit-id="${suit.id}"
+            data-length="${length}"
+          >
+            ${tokenMarkup}
+          </div>
+        `;
+      }).join("");
+
+      rowMarkup.push(`
+        <div class="${rowClasses}">
+          <div class="track-header-cell length-cell">${lengthLabel}</div>
+          ${sideCardMarkup}
+          ${laneCellsMarkup}
+        </div>
+      `);
+    }
+
+    this.gridEl.innerHTML = `
+      <div class="track-header-row">
+        <div class="track-header-cell length-head">Length</div>
+        <div class="track-header-cell side-card-head">Card</div>
+        ${headerCellsMarkup}
+      </div>
+      ${rowMarkup.join("")}
+    `;
   }
 
   setDrawCard(suitId) {

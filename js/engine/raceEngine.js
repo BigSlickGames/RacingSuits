@@ -19,7 +19,8 @@ export class RaceEngine {
   }
 
   dealCheckpoints() {
-    return Array.from({ length: this.trackLength }, (_, index) => {
+    // No side card on the finish row. For a 10-length track, cards are L1..L9.
+    return Array.from({ length: Math.max(0, this.trackLength - 1) }, (_, index) => {
       return {
         length: index + 1,
         suitId: this.sideCardDeck.draw(),
@@ -28,8 +29,9 @@ export class RaceEngine {
     });
   }
 
-  allSuitsCleared(length) {
-    return SUITS.every((suit) => this.positions[suit.id] >= length);
+  allSuitsPassed(length) {
+    // Side card flips only after every racer is beyond the row.
+    return SUITS.every((suit) => this.positions[suit.id] > length);
   }
 
   snapshot() {
@@ -65,7 +67,7 @@ export class RaceEngine {
         continue;
       }
 
-      if (!this.allSuitsCleared(checkpoint.length)) {
+      if (!this.allSuitsPassed(checkpoint.length)) {
         break;
       }
 

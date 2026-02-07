@@ -306,8 +306,8 @@ h3 {
 }
 
 .track-board {
-  --lane-label-width: 112px;
-  --track-cell-size: 44px;
+  --length-col-width: 88px;
+  --track-cell-size: 50px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 16px;
   background: rgba(0, 0, 0, 0.24);
@@ -325,7 +325,7 @@ h3 {
 }
 
 .track-viewport {
-  height: clamp(280px, 52vh, 440px);
+  height: clamp(360px, 66vh, 620px);
   overflow: auto;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -336,81 +336,126 @@ h3 {
 
 .race-grid {
   display: grid;
-  gap: 0.46rem;
-  width: max-content;
-}
-
-.race-lane {
-  display: grid;
-  grid-template-columns:
-    var(--lane-label-width)
-    repeat(var(--track-column-count, 11), minmax(var(--track-cell-size), var(--track-cell-size)));
   gap: 0.35rem;
-  align-items: center;
+  width: 100%;
+  min-width: max-content;
 }
 
-.lane-label {
-  font-weight: 800;
-  padding: 0.42rem 0.5rem;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  text-align: center;
+.track-header-row,
+.track-row {
+  display: grid;
+  grid-template-columns: var(--length-col-width) repeat(5, var(--track-cell-size));
+  gap: 0.35rem;
+  align-items: stretch;
 }
 
-.lane-label.length-label {
-  background: rgba(255, 183, 3, 0.18);
-}
-
-.lane-label.checkpoint-label {
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.length-header-cell {
+.track-header-cell {
   height: var(--track-cell-size);
+  font-weight: 800;
+  padding: 0.34rem 0.4rem;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.26);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 800;
+  text-align: center;
+  line-height: 1.05;
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
   color: #fdf0c8;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.09);
 }
 
-.length-header-cell.finish {
+.track-header-cell.length-head,
+.track-header-cell.side-card-head {
+  background: rgba(255, 183, 3, 0.2);
+  color: #ffeec1;
+}
+
+.track-header-cell.length-cell {
+  background: rgba(255, 255, 255, 0.14);
+  color: #f6ffe5;
+}
+
+.track-header-cell.suit-header {
+  color: #f5ffde;
+}
+
+.track-header-cell.suit-header .header-symbol {
+  font-size: 1.18rem;
+  line-height: 1;
+}
+
+.track-header-cell.suit-header .header-name {
+  font-size: 0.62rem;
+  margin-top: 0.12rem;
+  opacity: 0.92;
+}
+
+.track-header-cell.suit-header.hearts {
+  background: linear-gradient(150deg, rgba(255, 115, 115, 0.45), rgba(156, 22, 22, 0.65));
+}
+
+.track-header-cell.suit-header.clubs {
+  background: linear-gradient(150deg, rgba(174, 225, 255, 0.45), rgba(50, 109, 152, 0.65));
+}
+
+.track-header-cell.suit-header.diamonds {
+  background: linear-gradient(150deg, rgba(177, 255, 193, 0.45), rgba(62, 137, 78, 0.65));
+}
+
+.track-header-cell.suit-header.spades {
+  background: linear-gradient(150deg, rgba(138, 138, 138, 0.5), rgba(42, 42, 42, 0.7));
+}
+
+.track-row.finish-row .length-cell {
   border-color: var(--marigold);
+  color: var(--marigold);
+}
+
+.track-row.start-row .length-cell {
+  color: #aaf1ff;
 }
 
 .track-cell {
   height: var(--track-cell-size);
   border-radius: 10px;
-  border: 2px dashed rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.24);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.track-cell.finish {
-  border-style: solid;
+.track-cell.lane-cell {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.track-cell.lane-cell.finish {
   border-color: var(--marigold);
+  box-shadow: 0 0 0 1px rgba(255, 183, 3, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 
-.track-cell.checkpoint-slot {
+.track-cell.side-card-cell {
   border-style: solid;
-  border-width: 1px;
   font-size: 1.12rem;
   font-weight: 900;
 }
 
-.track-cell.checkpoint-slot.start-gap {
+.track-cell.side-card-cell.start-gap {
   background: rgba(255, 255, 255, 0.04);
   border-style: dotted;
   color: rgba(255, 255, 255, 0.4);
 }
 
-.track-cell.checkpoint-slot.face-down {
+.track-cell.side-card-cell.no-card {
+  background: rgba(255, 255, 255, 0.04);
+  border-style: dotted;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.track-cell.side-card-cell.face-down {
   background:
     repeating-linear-gradient(145deg, #35226a, #35226a 9px, #543a8a 9px, #543a8a 18px);
   color: #fff9;
@@ -433,30 +478,31 @@ h3 {
 .racer-token.hearts,
 .suit-option.hearts .suit-symbol,
 .draw-card.hearts,
-.track-cell.checkpoint-slot.hearts {
-  background: linear-gradient(140deg, #ff7b7b, #ff2e63);
+.track-cell.side-card-cell.hearts {
+  background: linear-gradient(140deg, #ff7b7b, #e11d48);
 }
 
 .racer-token.diamonds,
 .suit-option.diamonds .suit-symbol,
 .draw-card.diamonds,
-.track-cell.checkpoint-slot.diamonds {
-  background: linear-gradient(140deg, #ffd166, #ff9f1c);
-  color: #422200;
+.track-cell.side-card-cell.diamonds {
+  background: linear-gradient(140deg, #c8ffc8, #7ddf92);
+  color: #18391f;
 }
 
 .racer-token.clubs,
 .suit-option.clubs .suit-symbol,
 .draw-card.clubs,
-.track-cell.checkpoint-slot.clubs {
-  background: linear-gradient(140deg, #48cae4, #0077b6);
+.track-cell.side-card-cell.clubs {
+  background: linear-gradient(140deg, #cbf0ff, #78c6ef);
+  color: #123a54;
 }
 
 .racer-token.spades,
 .suit-option.spades .suit-symbol,
 .draw-card.spades,
-.track-cell.checkpoint-slot.spades {
-  background: linear-gradient(140deg, #80ed99, #2a9d8f);
+.track-cell.side-card-cell.spades {
+  background: linear-gradient(140deg, #888888, #272727);
 }
 
 .race-controls {
@@ -600,12 +646,12 @@ input[type="range"] {
 
 @media (max-width: 960px) {
   .track-board {
-    --lane-label-width: 102px;
-    --track-cell-size: 40px;
+    --length-col-width: 82px;
+    --track-cell-size: 44px;
   }
 
   .track-viewport {
-    height: clamp(250px, 48vh, 390px);
+    height: clamp(340px, 62vh, 560px);
   }
 
   .track-meta {
@@ -636,18 +682,26 @@ input[type="range"] {
   }
 
   .track-board {
-    --lane-label-width: 90px;
-    --track-cell-size: 34px;
+    --length-col-width: 72px;
+    --track-cell-size: 38px;
   }
 
   .track-viewport {
-    height: clamp(230px, 44vh, 320px);
+    height: clamp(320px, 58vh, 500px);
     padding: 0.45rem;
   }
 
-  .lane-label,
-  .length-header-cell {
-    font-size: 0.74rem;
+  .track-header-cell {
+    font-size: 0.64rem;
+    border-radius: 8px;
+  }
+
+  .track-header-cell.suit-header .header-symbol {
+    font-size: 1rem;
+  }
+
+  .track-header-cell.suit-header .header-name {
+    font-size: 0.54rem;
   }
 }
 
@@ -694,20 +748,27 @@ input[type="range"] {
   }
 
   .track-board {
-    --lane-label-width: 74px;
-    --track-cell-size: 28px;
+    --length-col-width: 64px;
+    --track-cell-size: 32px;
   }
 
   .track-viewport {
-    height: clamp(210px, 40vh, 300px);
+    height: clamp(288px, 56vh, 460px);
     padding: 0.35rem;
   }
 
-  .lane-label,
-  .length-header-cell {
-    font-size: 0.68rem;
+  .track-header-cell {
+    font-size: 0.58rem;
     border-radius: 7px;
-    padding: 0.2rem;
+    padding: 0.16rem;
+  }
+
+  .track-header-cell.suit-header .header-symbol {
+    font-size: 0.9rem;
+  }
+
+  .track-header-cell.suit-header .header-name {
+    font-size: 0.5rem;
   }
 
   .race-log {
@@ -728,13 +789,21 @@ input[type="range"] {
   }
 
   .track-board {
-    --lane-label-width: 64px;
-    --track-cell-size: 24px;
+    --length-col-width: 56px;
+    --track-cell-size: 28px;
   }
 
-  .lane-label {
-    font-size: 0.62rem;
-    padding: 0.18rem;
+  .track-header-cell {
+    font-size: 0.52rem;
+    padding: 0.12rem;
+  }
+
+  .track-header-cell.suit-header .header-symbol {
+    font-size: 0.8rem;
+  }
+
+  .track-header-cell.suit-header .header-name {
+    font-size: 0.45rem;
   }
 }
 
