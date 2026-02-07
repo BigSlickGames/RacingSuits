@@ -69,7 +69,8 @@ export class RaceScreen {
     this.renderSummary();
     this.renderRaceState(this.engine.snapshot());
     this.setDrawCard(null);
-    this.pushLog("Click Start Race! to flip cards and move the suits.");
+    this.logEntries = [];
+    this.logEl.innerHTML = "";
 
     this.startButton.disabled = false;
     this.startButton.textContent = "Start Race!";
@@ -195,7 +196,6 @@ export class RaceScreen {
 
     this.startButton.disabled = true;
     this.startButton.textContent = "Racing...";
-    this.pushLog("The starter bell rings and the race is on.");
 
     this.intervalId = setInterval(() => {
       this.runTurn();

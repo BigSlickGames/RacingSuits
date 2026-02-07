@@ -16,10 +16,8 @@ const suitSelectionScreen = new SuitSelectionScreen({
 
 const anteSelectionScreen = new AnteSelectionScreen({
   screenEl: document.getElementById("screen-ante"),
-  sliderEl: document.getElementById("ante-slider"),
+  buttonGroupEl: document.getElementById("ante-button-group"),
   valueEl: document.getElementById("ante-value"),
-  minLabelEl: document.getElementById("ante-min-label"),
-  maxLabelEl: document.getElementById("ante-max-label"),
   chipsEl: document.getElementById("available-chip-count"),
   backButton: document.getElementById("ante-back-btn"),
   confirmButton: document.getElementById("ante-confirm-btn")
@@ -63,15 +61,12 @@ function showSuitSelectionScreen() {
 
 function showAnteSelectionScreen() {
   hideAllScreens();
-  const bounds = gameState.getAnteBounds();
   const normalizedAnte = gameState.setAnte(gameState.ante);
 
   anteSelectionScreen.show({
     chips: gameState.chips,
     ante: normalizedAnte,
-    minAnte: bounds.min,
-    maxAnte: bounds.max,
-    step: GAME_CONSTANTS.ANTE_STEP
+    anteOptions: GAME_CONSTANTS.ANTE_OPTIONS
   });
 }
 

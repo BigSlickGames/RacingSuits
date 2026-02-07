@@ -1,5 +1,5 @@
-const MIN_ANTE = 10;
-const ANTE_STEP = 10;
+const ANTE_OPTIONS = Object.freeze([5, 10, 20, 50, 100, 200]);
+const MIN_ANTE = ANTE_OPTIONS[0];
 const TRACK_LENGTH = 10;
 const STARTING_CHIPS = 200;
 
@@ -7,13 +7,26 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function snapToAnteStep(value, min, max) {
-  if (max <= min) {
-    return max;
+function getAvailableAnteOptions(chips) {
+  return ANTE_OPTIONS.filter((option) => option <= chips);
+}
+
+function normalizeAnte(value, chips) {
+  const available = getAvailableAnteOptions(chips);
+  if (available.length === 0) {
+    return MIN_ANTE;
   }
 
-  const snapped = Math.round(value / ANTE_STEP) * ANTE_STEP;
-  return clamp(snapped, min, max);
+  if (available.includes(value)) {
+    return value;
+  }
+
+  const candidates = available.filter((option) => option <= value);
+  if (candidates.length > 0) {
+    return candidates[candidates.length - 1];
+  }
+
+  return available[0];
 }
 
 export class GameState {
@@ -29,15 +42,19 @@ export class GameState {
   }
 
   getAnteBounds() {
+    const available = getAvailableAnteOptions(this.chips);
     return {
       min: MIN_ANTE,
-      max: this.chips
+      max: available.length ? available[available.length - 1] : MIN_ANTE
     };
   }
 
+  getAvailableAntes() {
+    return getAvailableAnteOptions(this.chips);
+  }
+
   setAnte(nextAnte) {
-    const bounds = this.getAnteBounds();
-    this.ante = snapToAnteStep(nextAnte, bounds.min, bounds.max);
+    this.ante = normalizeAnte(nextAnte, this.chips);
     return this.ante;
   }
 
@@ -66,7 +83,7 @@ export class GameState {
 
 export const GAME_CONSTANTS = Object.freeze({
   MIN_ANTE,
-  ANTE_STEP,
+  ANTE_OPTIONS,
   TRACK_LENGTH,
   STARTING_CHIPS
 });
