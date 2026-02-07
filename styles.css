@@ -325,8 +325,10 @@ h3 {
 }
 
 .track-viewport {
-  height: clamp(360px, 66vh, 620px);
-  overflow: auto;
+  height: auto;
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: visible;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.03);
@@ -650,10 +652,6 @@ input[type="range"] {
     --track-cell-size: 44px;
   }
 
-  .track-viewport {
-    height: clamp(340px, 62vh, 560px);
-  }
-
   .track-meta {
     align-items: flex-start;
   }
@@ -687,7 +685,6 @@ input[type="range"] {
   }
 
   .track-viewport {
-    height: clamp(320px, 58vh, 500px);
     padding: 0.45rem;
   }
 
@@ -753,7 +750,6 @@ input[type="range"] {
   }
 
   .track-viewport {
-    height: clamp(288px, 56vh, 460px);
     padding: 0.35rem;
   }
 
