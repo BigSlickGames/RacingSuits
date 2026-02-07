@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Racing Suits</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="festival-glow glow-a" aria-hidden="true"></div>
+  <div class="festival-glow glow-b" aria-hidden="true"></div>
+
+  <main id="app" class="app-shell">
+    <header class="app-header">
+      <div>
+        <h1>Racing Suits</h1>
+        <p class="tagline">Carnival Track Clash</p>
+      </div>
+      <div class="chip-display">
+        Festival Chips
+        <span id="chip-count">200</span>
+      </div>
+    </header>
+
+    <section id="screen-suit" class="screen active" aria-labelledby="suit-title">
+      <h2 id="suit-title">Choose Your Suit</h2>
+      <p class="screen-copy">Pick hearts, clubs, diamonds, or spades before the race lights up.</p>
+      <div id="suit-options" class="suit-options"></div>
+      <button id="suit-confirm-btn" class="action-btn" disabled>Continue to Ante</button>
+    </section>
+
+    <section id="screen-ante" class="screen" aria-labelledby="ante-title">
+      <h2 id="ante-title">Set Your Ante</h2>
+      <p class="screen-copy">Slide from 10 chips up to all in.</p>
+      <div class="ante-panel">
+        <div class="ante-summary">Available chips: <strong id="available-chip-count">200</strong></div>
+        <input
+          id="ante-slider"
+          class="ante-slider"
+          type="range"
+          min="10"
+          max="200"
+          step="10"
+          value="10"
+          aria-label="Ante slider"
+        >
+        <div class="ante-range-labels">
+          <span id="ante-min-label">10</span>
+          <span id="ante-max-label">ALL IN</span>
+        </div>
+        <div class="ante-value">Ante: <span id="ante-value">10</span></div>
+      </div>
+      <div class="screen-actions">
+        <button id="ante-back-btn" class="ghost-btn">Back</button>
+        <button id="ante-confirm-btn" class="action-btn">Head To The Track</button>
+      </div>
+    </section>
+
+    <section id="screen-race" class="screen" aria-labelledby="race-title">
+      <h2 id="race-title">Suit Race</h2>
+      <div id="race-summary" class="race-summary"></div>
+
+      <div class="race-layout">
+        <div class="track-board">
+          <div class="track-meta">
+            <span>Checkpoint cards are now on-track and equal to length cells.</span>
+          </div>
+
+          <div class="track-viewport">
+            <div id="race-grid" class="race-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="race-controls">
+        <div class="draw-area">
+          <span>Current Flip</span>
+          <div id="current-draw-card" class="draw-card face-down">?</div>
+        </div>
+        <button id="start-race-btn" class="action-btn">Start Race!</button>
+      </div>
+
+      <div id="race-log" class="race-log" aria-live="polite"></div>
+    </section>
+
+    <section id="screen-result" class="screen" aria-labelledby="result-title">
+      <h2 id="result-title">Finish Line Frenzy!</h2>
+      <div id="result-banner" class="result-banner"></div>
+      <p id="result-copy" class="result-copy"></p>
+      <button id="race-again-btn" class="action-btn">Race Again??</button>
+    </section>
+  </main>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
