@@ -9,17 +9,23 @@
 <body>
   <main id="app" class="app-shell loading">
     <header class="app-header" aria-label="Player panel">
-      <div class="player-meta">
-        <p class="player-kicker">Player Garage</p>
-        <h1>Selection Hub</h1>
-        <p class="tagline">Pick your racer and lock your ante.</p>
+      <div class="player-profile">
+        <div class="player-avatar" aria-hidden="true">P1</div>
+        <div class="player-meta">
+          <p class="player-kicker">Player Profile</p>
+          <h1>Brent Driver</h1>
+          <p class="tagline">Pick your racer and lock your ante.</p>
+        </div>
       </div>
       <div class="player-stats">
         <div class="stat-pill primary">
           <span class="stat-label">Chips</span>
           <span id="chip-count" class="stat-value">200</span>
         </div>
-        <button id="open-menu-btn" class="menu-btn" type="button">Menu</button>
+        <div class="profile-mini-stats" aria-label="Player short stats">
+          <span id="profile-wins" class="profile-mini-pill">0</span>
+          <span id="profile-streak" class="profile-mini-pill">0</span>
+        </div>
       </div>
     </header>
 
@@ -40,6 +46,9 @@
 
     <section id="screen-ante" class="screen ante-screen" aria-labelledby="ante-title">
       <h2 id="ante-title">Choose Your Ante</h2>
+      <div class="ante-racer-stage" aria-label="Selected racer">
+        <img id="ante-racer-image" class="ante-racer-image" src="" alt="">
+      </div>
       <div class="ante-panel">
         <div class="ante-summary">Available chips: <strong id="available-chip-count">200</strong></div>
         <div class="ante-slider-wrap">
@@ -69,71 +78,96 @@
     <section id="screen-menu" class="screen menu-screen" aria-labelledby="menu-title">
       <h2 id="menu-title">Menu</h2>
       <div class="menu-panel">
-        <button id="menu-stats-btn" class="action-btn" type="button">Player Stats</button>
-        <button id="menu-back-btn" class="ghost-btn" type="button">Back To Selection</button>
+        <button id="menu-home-btn" class="action-btn" type="button">Home</button>
+        <button id="menu-leaderboard-btn" class="action-btn" type="button">Leaderboard</button>
+        <button id="menu-settings-btn" class="ghost-btn" type="button">Settings</button>
+        <button id="menu-bsg-btn" class="ghost-btn" type="button">Big Slick Games</button>
+        <button id="menu-store-btn" class="ghost-btn" type="button">Store</button>
+        <button id="menu-back-btn" class="ghost-btn" type="button">Back</button>
       </div>
     </section>
 
     <section id="screen-stats" class="screen stats-screen" aria-labelledby="stats-title">
-      <h2 id="stats-title">Player Stats</h2>
-      <div class="stats-panel stats-summary-panel">
-        <div class="stats-row">
-          <span>Total Wins</span>
-          <strong id="stats-wins-value">0</strong>
-        </div>
-        <div class="stats-row">
-          <span>Current Streak</span>
-          <strong id="stats-streak-value">0</strong>
-        </div>
-        <div class="stats-row">
-          <span>Games Played</span>
-          <strong id="stats-games-value">0</strong>
-        </div>
-        <div class="stats-row">
-          <span>Net Chips</span>
-          <strong id="stats-netchips-value">0</strong>
-        </div>
+      <h2 id="stats-title">Leaderboard</h2>
+      <div class="stats-page-tabs" role="tablist" aria-label="Leaderboard tabs">
+        <button id="stats-page-wins-btn" class="stats-page-btn active" type="button">Overall Wins</button>
+        <button id="stats-page-streak-btn" class="stats-page-btn" type="button">Win Streak</button>
+        <button id="stats-page-chips-btn" class="stats-page-btn" type="button">Most Chips Won</button>
       </div>
       <div class="stats-leaderboards">
-        <section class="stats-board" aria-labelledby="wins-board-title">
-          <h3 id="wins-board-title">Wins / Streak Leaderboard</h3>
-          <div class="stats-table-wrap">
-            <table class="stats-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Racer</th>
-                  <th>Wins</th>
-                  <th>Best</th>
-                </tr>
-              </thead>
-              <tbody id="wins-leaderboard-body"></tbody>
-            </table>
+        <section id="wins-board-page" class="stats-board leaderboard-page active">
+          <div class="medal-strip" aria-hidden="true">
+            <span>&#129351; 1</span>
+            <span>&#129352; 2</span>
+            <span>&#129353; 3</span>
           </div>
+          <div id="wins-main-value" class="leaderboard-main-value">0</div>
+          <p id="wins-player-position" class="player-position-note">Your position: #1</p>
         </section>
-        <section class="stats-board" aria-labelledby="chips-board-title">
-          <h3 id="chips-board-title">Chip % Leaderboard</h3>
-          <div class="stats-table-wrap">
-            <table class="stats-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Racer</th>
-                  <th>Chips</th>
-                  <th>Games</th>
-                  <th>Best</th>
-                  <th>Win%</th>
-                  <th>ROI%</th>
-                </tr>
-              </thead>
-              <tbody id="chips-leaderboard-body"></tbody>
-            </table>
+        <section id="streak-board-page" class="stats-board leaderboard-page">
+          <div class="medal-strip" aria-hidden="true">
+            <span>&#129351; 1</span>
+            <span>&#129352; 2</span>
+            <span>&#129353; 3</span>
           </div>
+          <div id="streak-main-value" class="leaderboard-main-value">0</div>
+          <p id="streak-player-position" class="player-position-note">Your position: #1</p>
+        </section>
+        <section id="chips-board-page" class="stats-board leaderboard-page">
+          <div class="medal-strip" aria-hidden="true">
+            <span>&#129351; 1</span>
+            <span>&#129352; 2</span>
+            <span>&#129353; 3</span>
+          </div>
+          <div id="chips-main-value" class="leaderboard-main-value">0</div>
+          <p id="chips-player-position" class="player-position-note">Your position: #1</p>
         </section>
       </div>
       <div class="menu-panel">
         <button id="stats-menu-btn" class="ghost-btn" type="button">Back To Menu</button>
-        <button id="stats-selection-btn" class="action-btn" type="button">Back To Selection</button>
+        <button id="stats-selection-btn" class="action-btn" type="button">Back</button>
+      </div>
+    </section>
+
+    <section id="screen-bsg" class="screen info-screen" aria-labelledby="bsg-title">
+      <h2 id="bsg-title">Big Slick Games</h2>
+      <div class="info-panel">
+        <p><a href="https://bigslickgames.com" target="_blank" rel="noopener noreferrer">bigslickgames.com</a></p>
+        <p>More content coming soon.</p>
+      </div>
+      <div class="menu-panel">
+        <button id="bsg-menu-btn" class="ghost-btn" type="button">Back To Menu</button>
+      </div>
+    </section>
+
+    <section id="screen-store" class="screen info-screen" aria-labelledby="store-title">
+      <h2 id="store-title">Store</h2>
+      <div class="info-panel">
+        <p>Products and purchases coming soon.</p>
+      </div>
+      <div class="menu-panel">
+        <button id="store-menu-btn" class="ghost-btn" type="button">Back To Menu</button>
+      </div>
+    </section>
+
+    <section id="screen-settings" class="screen info-screen" aria-labelledby="settings-title">
+      <h2 id="settings-title">Settings</h2>
+      <div class="settings-panel">
+        <label class="settings-row" for="settings-sound-toggle">
+          <span>Sound Effects</span>
+          <input id="settings-sound-toggle" type="checkbox" checked>
+        </label>
+        <label class="settings-row" for="settings-music-toggle">
+          <span>Music</span>
+          <input id="settings-music-toggle" type="checkbox" checked>
+        </label>
+        <label class="settings-row" for="settings-instant-win-toggle">
+          <span>Instant Win</span>
+          <input id="settings-instant-win-toggle" type="checkbox">
+        </label>
+      </div>
+      <div class="menu-panel">
+        <button id="settings-menu-btn" class="ghost-btn" type="button">Back To Menu</button>
       </div>
     </section>
 
@@ -146,20 +180,19 @@
           <div class="track-viewport">
             <div class="track-inner">
               <div id="race-grid" class="race-grid"></div>
+              <div class="track-controls-panel">
+                <div class="draw-area">
+                  <span>Current Flip</span>
+                  <div id="current-draw-card" class="draw-card face-down"></div>
+                </div>
+                <button id="start-race-btn" class="action-btn">Start Race!</button>
+              </div>
               <aside class="race-sidebar" aria-label="Current race standings">
                 <div id="race-rankings" class="race-rankings"></div>
               </aside>
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="race-controls">
-        <div class="draw-area">
-          <span>Current Flip</span>
-          <div id="current-draw-card" class="draw-card face-down"></div>
-        </div>
-        <button id="start-race-btn" class="action-btn">Start Race!</button>
       </div>
     </section>
 
@@ -176,6 +209,11 @@
       <p id="result-copy" class="result-copy"></p>
       <button id="race-again-btn" class="action-btn">Race Again??</button>
     </section>
+
+    <div id="floating-nav" class="floating-nav" aria-label="Quick navigation">
+      <button id="floating-menu-btn" class="floating-nav-btn" type="button">Menu</button>
+    </div>
+    <div id="screen-transition-streak" class="screen-transition-streak" aria-hidden="true"></div>
   </main>
 
   <script type="module" src="./js/main.js"></script>

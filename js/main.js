@@ -8,59 +8,80 @@ import { ResultsScreen } from "./screens/resultsScreen.js";
 const MIN_BANNER_SCREEN_MS = 2800;
 
 const gameState = new GameState(GAME_CONSTANTS.STARTING_CHIPS);
-let selectionReturnTarget = "suit";
+let currentScreenKey = "banner";
+let menuReturnTarget = "suit";
+let activeLeaderboardPage = "wins";
+const settingsState = {
+  soundEnabled: true,
+  musicEnabled: true,
+  instantWinEnabled: false
+};
 
 const appShellEl = document.getElementById("app");
 const appHeaderEl = document.querySelector(".app-header");
 const chipCountEl = document.getElementById("chip-count");
+const profileWinsEl = document.getElementById("profile-wins");
+const profileStreakEl = document.getElementById("profile-streak");
 const bannerScreenEl = document.getElementById("screen-banner");
+const floatingNavEl = document.getElementById("floating-nav");
+const floatingMenuButton = document.getElementById("floating-menu-btn");
+const screenTransitionStreakEl = document.getElementById("screen-transition-streak");
 
 const menuScreenEl = document.getElementById("screen-menu");
 const statsScreenEl = document.getElementById("screen-stats");
+const bsgScreenEl = document.getElementById("screen-bsg");
+const storeScreenEl = document.getElementById("screen-store");
+const settingsScreenEl = document.getElementById("screen-settings");
 
-const openMenuButton = document.getElementById("open-menu-btn");
-const menuStatsButton = document.getElementById("menu-stats-btn");
+const menuLeaderboardButton = document.getElementById("menu-leaderboard-btn");
+const menuHomeButton = document.getElementById("menu-home-btn");
+const menuSettingsButton = document.getElementById("menu-settings-btn");
+const menuBsgButton = document.getElementById("menu-bsg-btn");
+const menuStoreButton = document.getElementById("menu-store-btn");
 const menuBackButton = document.getElementById("menu-back-btn");
+
 const statsMenuButton = document.getElementById("stats-menu-btn");
 const statsSelectionButton = document.getElementById("stats-selection-btn");
+const bsgMenuButton = document.getElementById("bsg-menu-btn");
+const storeMenuButton = document.getElementById("store-menu-btn");
+const settingsMenuButton = document.getElementById("settings-menu-btn");
+const settingsSoundToggle = document.getElementById("settings-sound-toggle");
+const settingsMusicToggle = document.getElementById("settings-music-toggle");
+const settingsInstantWinToggle = document.getElementById("settings-instant-win-toggle");
 
-const statsWinsValueEl = document.getElementById("stats-wins-value");
-const statsStreakValueEl = document.getElementById("stats-streak-value");
-const statsGamesValueEl = document.getElementById("stats-games-value");
-const statsNetChipsValueEl = document.getElementById("stats-netchips-value");
-const winsLeaderboardBodyEl = document.getElementById("wins-leaderboard-body");
-const chipsLeaderboardBodyEl = document.getElementById("chips-leaderboard-body");
-const suitLookup = SUITS.reduce((accumulator, suit) => {
-  accumulator[suit.id] = suit;
-  return accumulator;
-}, {});
+const winsMainValueEl = document.getElementById("wins-main-value");
+const streakMainValueEl = document.getElementById("streak-main-value");
+const chipsMainValueEl = document.getElementById("chips-main-value");
 
-const bannerScreen = {
-  show() {
-    bannerScreenEl.classList.add("active");
-  },
-  hide() {
-    bannerScreenEl.classList.remove("active");
-  }
-};
+const winsPlayerPositionEl = document.getElementById("wins-player-position");
+const streakPlayerPositionEl = document.getElementById("streak-player-position");
+const chipsPlayerPositionEl = document.getElementById("chips-player-position");
 
-const menuScreen = {
-  show() {
-    menuScreenEl.classList.add("active");
-  },
-  hide() {
-    menuScreenEl.classList.remove("active");
-  }
-};
+const statsPageWinsButton = document.getElementById("stats-page-wins-btn");
+const statsPageStreakButton = document.getElementById("stats-page-streak-btn");
+const statsPageChipsButton = document.getElementById("stats-page-chips-btn");
 
-const statsScreen = {
-  show() {
-    statsScreenEl.classList.add("active");
-  },
-  hide() {
-    statsScreenEl.classList.remove("active");
-  }
-};
+const winsBoardPageEl = document.getElementById("wins-board-page");
+const streakBoardPageEl = document.getElementById("streak-board-page");
+const chipsBoardPageEl = document.getElementById("chips-board-page");
+
+function createScreenController(screenEl) {
+  return {
+    show() {
+      screenEl.classList.add("active");
+    },
+    hide() {
+      screenEl.classList.remove("active");
+    }
+  };
+}
+
+const bannerScreen = createScreenController(bannerScreenEl);
+const menuScreen = createScreenController(menuScreenEl);
+const statsScreen = createScreenController(statsScreenEl);
+const bsgScreen = createScreenController(bsgScreenEl);
+const storeScreen = createScreenController(storeScreenEl);
+const settingsScreen = createScreenController(settingsScreenEl);
 
 const suitSelectionScreen = new SuitSelectionScreen({
   screenEl: document.getElementById("screen-suit"),
@@ -70,6 +91,7 @@ const suitSelectionScreen = new SuitSelectionScreen({
 
 const anteSelectionScreen = new AnteSelectionScreen({
   screenEl: document.getElementById("screen-ante"),
+  racerImageEl: document.getElementById("ante-racer-image"),
   sliderEl: document.getElementById("ante-slider"),
   minLabelEl: document.getElementById("ante-min-label"),
   maxLabelEl: document.getElementById("ante-max-label"),
@@ -103,13 +125,14 @@ const allScreens = [
   anteSelectionScreen,
   menuScreen,
   statsScreen,
+  bsgScreen,
+  storeScreen,
+  settingsScreen,
   raceScreen,
   resultsScreen
 ];
 
-function updateChipDisplay() {
-  chipCountEl.textContent = String(gameState.chips);
-}
+let screenTransitionTimeoutId = null;
 
 function formatSigned(value) {
   if (value > 0) {
@@ -118,60 +141,47 @@ function formatSigned(value) {
   return String(value);
 }
 
-function formatPercent(value) {
-  return `${value.toFixed(1)}%`;
+function updateChipDisplay() {
+  chipCountEl.textContent = String(gameState.chips);
+  profileWinsEl.textContent = String(gameState.wins);
+  profileStreakEl.textContent = String(gameState.currentStreak);
 }
 
-function renderWinsLeaderboard(entries) {
-  winsLeaderboardBodyEl.innerHTML = entries.map((entry, index) => {
-    const suit = suitLookup[entry.suitId];
-    return `
-      <tr>
-        <td>${index + 1}</td>
-        <td>
-          <span class="stats-racer-tag">
-            <img class="stats-racer-thumb" src="${suit.racerImage}" alt="${suit.name}">
-            <span>${suit.name}</span>
-          </span>
-        </td>
-        <td>${entry.wins}</td>
-        <td>${entry.bestStreak}</td>
-      </tr>
-    `;
-  }).join("");
+function updateLeaderboardDisplay() {
+  winsMainValueEl.textContent = String(gameState.wins);
+  streakMainValueEl.textContent = String(gameState.bestStreak);
+  chipsMainValueEl.textContent = formatSigned(gameState.totalChipsWon);
+
+  winsPlayerPositionEl.textContent = `Your position: #1 | ${gameState.wins} total wins`;
+  streakPlayerPositionEl.textContent = `Your position: #1 | best ${gameState.bestStreak} | current ${gameState.currentStreak}`;
+  chipsPlayerPositionEl.textContent = `Your position: #1 | ${formatSigned(gameState.totalChipsWon)} over ${gameState.totalGames} games`;
 }
 
-function renderChipLeaderboard(entries) {
-  chipsLeaderboardBodyEl.innerHTML = entries.map((entry, index) => {
-    const suit = suitLookup[entry.suitId];
-    return `
-      <tr>
-        <td>${index + 1}</td>
-        <td>
-          <span class="stats-racer-tag">
-            <img class="stats-racer-thumb" src="${suit.racerImage}" alt="${suit.name}">
-            <span>${suit.name}</span>
-          </span>
-        </td>
-        <td>${formatSigned(entry.chipsNet)}</td>
-        <td>${entry.games}</td>
-        <td>${entry.bestStreak}</td>
-        <td>${formatPercent(entry.winRatePct)}</td>
-        <td>${formatPercent(entry.roiPct)}</td>
-      </tr>
-    `;
-  }).join("");
+function syncSettingsControls() {
+  settingsSoundToggle.checked = settingsState.soundEnabled;
+  settingsMusicToggle.checked = settingsState.musicEnabled;
+  settingsInstantWinToggle.checked = settingsState.instantWinEnabled;
 }
 
-function updateStatsDisplay() {
-  statsWinsValueEl.textContent = String(gameState.wins);
-  statsStreakValueEl.textContent = String(gameState.currentStreak);
-  statsGamesValueEl.textContent = String(gameState.totalGames);
-  statsNetChipsValueEl.textContent = formatSigned(gameState.totalChipDelta);
+function setLeaderboardPage(pageId) {
+  const normalizedPage = ["wins", "streak", "chips"].includes(pageId) ? pageId : "wins";
+  activeLeaderboardPage = normalizedPage;
 
-  const { winsLeaderboard, chipLeaderboard } = gameState.getSuitLeaderboards();
-  renderWinsLeaderboard(winsLeaderboard);
-  renderChipLeaderboard(chipLeaderboard);
+  const showWins = normalizedPage === "wins";
+  const showStreak = normalizedPage === "streak";
+  const showChips = normalizedPage === "chips";
+
+  winsBoardPageEl.classList.toggle("active", showWins);
+  streakBoardPageEl.classList.toggle("active", showStreak);
+  chipsBoardPageEl.classList.toggle("active", showChips);
+
+  statsPageWinsButton.classList.toggle("active", showWins);
+  statsPageStreakButton.classList.toggle("active", showStreak);
+  statsPageChipsButton.classList.toggle("active", showChips);
+
+  statsPageWinsButton.setAttribute("aria-pressed", showWins ? "true" : "false");
+  statsPageStreakButton.setAttribute("aria-pressed", showStreak ? "true" : "false");
+  statsPageChipsButton.setAttribute("aria-pressed", showChips ? "true" : "false");
 }
 
 function hideAllScreens() {
@@ -186,67 +196,195 @@ function setSelectionHeaderVisible(isVisible) {
   appHeaderEl.classList.toggle("hidden", !isVisible);
 }
 
+function setFloatingMenuVisible(isVisible) {
+  floatingNavEl.classList.toggle("hidden", !isVisible);
+}
+
+function playScreenTransition() {
+  if (!screenTransitionStreakEl) {
+    return;
+  }
+
+  screenTransitionStreakEl.classList.remove("is-active");
+  void screenTransitionStreakEl.offsetWidth;
+  screenTransitionStreakEl.classList.add("is-active");
+
+  window.clearTimeout(screenTransitionTimeoutId);
+  screenTransitionTimeoutId = window.setTimeout(() => {
+    screenTransitionStreakEl.classList.remove("is-active");
+  }, 620);
+}
+
+function setCurrentScreen(screenKey) {
+  const hasChanged = currentScreenKey !== screenKey;
+  currentScreenKey = screenKey;
+  if (hasChanged) {
+    playScreenTransition();
+  }
+}
+
 function showBannerScreen() {
   hideAllScreens();
   setLoadingMode(true);
   setSelectionHeaderVisible(false);
+  setFloatingMenuVisible(false);
   bannerScreen.show();
+  setCurrentScreen("banner");
 }
 
 function showSuitSelectionScreen() {
   hideAllScreens();
   setLoadingMode(false);
   setSelectionHeaderVisible(true);
-  selectionReturnTarget = "suit";
-
+  setFloatingMenuVisible(true);
   suitSelectionScreen.show(gameState.selectedSuitId);
+  setCurrentScreen("suit");
 }
 
 function showAnteSelectionScreen() {
   hideAllScreens();
   setLoadingMode(false);
   setSelectionHeaderVisible(true);
-  selectionReturnTarget = "ante";
+  setFloatingMenuVisible(true);
 
   anteSelectionScreen.show({
     chips: gameState.chips,
     ante: gameState.setAnte(gameState.ante),
-    anteOptions: GAME_CONSTANTS.ANTE_OPTIONS
+    anteOptions: GAME_CONSTANTS.ANTE_OPTIONS,
+    selectedSuitId: gameState.selectedSuitId
   });
+
+  setCurrentScreen("ante");
 }
 
 function showMenuScreen() {
   hideAllScreens();
   setLoadingMode(false);
   setSelectionHeaderVisible(true);
+  setFloatingMenuVisible(true);
   menuScreen.show();
+  setCurrentScreen("menu");
 }
 
 function showStatsScreen() {
   hideAllScreens();
   setLoadingMode(false);
   setSelectionHeaderVisible(true);
-  updateStatsDisplay();
+  setFloatingMenuVisible(true);
+  updateLeaderboardDisplay();
+  setLeaderboardPage(activeLeaderboardPage);
   statsScreen.show();
+  setCurrentScreen("stats");
 }
 
-function returnToSelectionTarget() {
-  if (selectionReturnTarget === "ante") {
-    showAnteSelectionScreen();
-    return;
-  }
+function showBigSlickScreen() {
+  hideAllScreens();
+  setLoadingMode(false);
+  setSelectionHeaderVisible(true);
+  setFloatingMenuVisible(true);
+  bsgScreen.show();
+  setCurrentScreen("bsg");
+}
 
-  showSuitSelectionScreen();
+function showStoreScreen() {
+  hideAllScreens();
+  setLoadingMode(false);
+  setSelectionHeaderVisible(true);
+  setFloatingMenuVisible(true);
+  storeScreen.show();
+  setCurrentScreen("store");
+}
+
+function showSettingsScreen() {
+  hideAllScreens();
+  setLoadingMode(false);
+  setSelectionHeaderVisible(true);
+  setFloatingMenuVisible(true);
+  syncSettingsControls();
+  settingsScreen.show();
+  setCurrentScreen("settings");
 }
 
 function showRaceScreen() {
   hideAllScreens();
+  setLoadingMode(false);
   setSelectionHeaderVisible(false);
+  setFloatingMenuVisible(true);
+
   raceScreen.show({
     playerSuitId: gameState.selectedSuitId,
     ante: gameState.ante,
-    trackLength: GAME_CONSTANTS.TRACK_LENGTH
+    trackLength: GAME_CONSTANTS.TRACK_LENGTH,
+    instantResolveEnabled: settingsState.instantWinEnabled
   });
+
+  setCurrentScreen("race");
+}
+
+function showResultScreen({ winnerSuitId, turnCount, settlement }) {
+  hideAllScreens();
+  setLoadingMode(false);
+  setSelectionHeaderVisible(false);
+  setFloatingMenuVisible(true);
+
+  resultsScreen.show({
+    winnerSuitId,
+    playerSuitId: gameState.selectedSuitId,
+    ante: gameState.ante,
+    turnCount,
+    settlement,
+    startingChips: GAME_CONSTANTS.STARTING_CHIPS
+  });
+
+  setCurrentScreen("result");
+}
+
+function showScreenByKey(screenKey) {
+  if (screenKey === "ante") {
+    showAnteSelectionScreen();
+    return;
+  }
+  if (screenKey === "race") {
+    showRaceScreen();
+    return;
+  }
+  if (screenKey === "result") {
+    showSuitSelectionScreen();
+    return;
+  }
+  if (screenKey === "stats") {
+    showStatsScreen();
+    return;
+  }
+  if (screenKey === "bsg") {
+    showBigSlickScreen();
+    return;
+  }
+  if (screenKey === "store") {
+    showStoreScreen();
+    return;
+  }
+  if (screenKey === "settings") {
+    showSettingsScreen();
+    return;
+  }
+  showSuitSelectionScreen();
+}
+
+function openMenuFromCurrentScreen() {
+  if (currentScreenKey !== "menu") {
+    menuReturnTarget = currentScreenKey;
+  }
+  showMenuScreen();
+}
+
+function returnFromMenu() {
+  showScreenByKey(menuReturnTarget);
+}
+
+function goHome() {
+  menuReturnTarget = "suit";
+  showSuitSelectionScreen();
 }
 
 function waitMs(ms) {
@@ -322,18 +460,8 @@ raceScreen.init({
   onRaceFinished: ({ winnerSuitId, turnCount }) => {
     const settlement = gameState.settleRace(winnerSuitId);
     updateChipDisplay();
-    updateStatsDisplay();
-
-    hideAllScreens();
-    setSelectionHeaderVisible(false);
-    resultsScreen.show({
-      winnerSuitId,
-      playerSuitId: gameState.selectedSuitId,
-      ante: gameState.ante,
-      turnCount,
-      settlement,
-      startingChips: GAME_CONSTANTS.STARTING_CHIPS
-    });
+    updateLeaderboardDisplay();
+    showResultScreen({ winnerSuitId, turnCount, settlement });
   }
 });
 
@@ -343,16 +471,32 @@ resultsScreen.init({
   }
 });
 
-openMenuButton.addEventListener("click", () => {
-  showMenuScreen();
+floatingMenuButton.addEventListener("click", () => {
+  openMenuFromCurrentScreen();
 });
 
-menuStatsButton.addEventListener("click", () => {
+menuHomeButton.addEventListener("click", () => {
+  goHome();
+});
+
+menuLeaderboardButton.addEventListener("click", () => {
   showStatsScreen();
 });
 
+menuSettingsButton.addEventListener("click", () => {
+  showSettingsScreen();
+});
+
+menuBsgButton.addEventListener("click", () => {
+  showBigSlickScreen();
+});
+
+menuStoreButton.addEventListener("click", () => {
+  showStoreScreen();
+});
+
 menuBackButton.addEventListener("click", () => {
-  returnToSelectionTarget();
+  returnFromMenu();
 });
 
 statsMenuButton.addEventListener("click", () => {
@@ -360,10 +504,47 @@ statsMenuButton.addEventListener("click", () => {
 });
 
 statsSelectionButton.addEventListener("click", () => {
-  returnToSelectionTarget();
+  returnFromMenu();
+});
+
+bsgMenuButton.addEventListener("click", () => {
+  showMenuScreen();
+});
+
+storeMenuButton.addEventListener("click", () => {
+  showMenuScreen();
+});
+
+settingsMenuButton.addEventListener("click", () => {
+  showMenuScreen();
+});
+
+settingsSoundToggle.addEventListener("change", () => {
+  settingsState.soundEnabled = settingsSoundToggle.checked;
+});
+
+settingsMusicToggle.addEventListener("change", () => {
+  settingsState.musicEnabled = settingsMusicToggle.checked;
+});
+
+settingsInstantWinToggle.addEventListener("change", () => {
+  settingsState.instantWinEnabled = settingsInstantWinToggle.checked;
+});
+
+statsPageWinsButton.addEventListener("click", () => {
+  setLeaderboardPage("wins");
+});
+
+statsPageStreakButton.addEventListener("click", () => {
+  setLeaderboardPage("streak");
+});
+
+statsPageChipsButton.addEventListener("click", () => {
+  setLeaderboardPage("chips");
 });
 
 updateChipDisplay();
-updateStatsDisplay();
+updateLeaderboardDisplay();
+syncSettingsControls();
+setLeaderboardPage("wins");
 runInitialLoadScreen();
-

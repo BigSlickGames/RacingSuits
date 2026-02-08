@@ -62,8 +62,10 @@ export class GameState {
     this.ante = MIN_ANTE;
     this.wins = 0;
     this.currentStreak = 0;
+    this.bestStreak = 0;
     this.totalGames = 0;
     this.totalChipDelta = 0;
+    this.totalChipsWon = 0;
     this.suitStats = createSuitStats();
   }
 
@@ -148,6 +150,8 @@ export class GameState {
     if (won) {
       this.wins += 1;
       this.currentStreak += 1;
+      this.bestStreak = Math.max(this.bestStreak, this.currentStreak);
+      this.totalChipsWon += chipDelta;
       if (selectedSuitStats) {
         selectedSuitStats.wins += 1;
         selectedSuitStats.currentStreak += 1;
@@ -180,8 +184,10 @@ export class GameState {
       refillApplied,
       wins: this.wins,
       currentStreak: this.currentStreak,
+      bestStreak: this.bestStreak,
       totalGames: this.totalGames,
-      totalChipDelta: this.totalChipDelta
+      totalChipDelta: this.totalChipDelta,
+      totalChipsWon: this.totalChipsWon
     };
   }
 }

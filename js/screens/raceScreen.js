@@ -5,20 +5,20 @@ const RACE_TICK_MS = 850;
 
 const LANE_TONES = Object.freeze({
   hearts: {
-    dark: "rgb(54 20 29)",
-    lit: "rgb(245 82 118)"
+    dark: "rgb(126 0 0)",
+    lit: "rgb(255 22 22)"
   },
   clubs: {
-    dark: "rgb(21 45 64)",
-    lit: "rgb(86 197 255)"
+    dark: "rgb(20 45 160)",
+    lit: "rgb(20 57 255)"
   },
   diamonds: {
-    dark: "rgb(30 52 36)",
-    lit: "rgb(118 236 143)"
+    dark: "rgb(0 92 10)",
+    lit: "rgb(122 245 122)"
   },
   spades: {
-    dark: "rgb(34 34 42)",
-    lit: "rgb(174 174 188)"
+    dark: "rgb(8 12 22)",
+    lit: "rgb(234 234 234)"
   }
 });
 
@@ -28,19 +28,16 @@ function getLaneToneColor(suitId, isLit) {
 }
 
 function getRankLabel(rank) {
-  if (rank % 10 === 1 && rank % 100 !== 11) {
-    return `${rank}st`;
+  if (rank === 1) {
+    return "\uD83E\uDD47";
   }
-
-  if (rank % 10 === 2 && rank % 100 !== 12) {
-    return `${rank}nd`;
+  if (rank === 2) {
+    return "\uD83E\uDD48";
   }
-
-  if (rank % 10 === 3 && rank % 100 !== 13) {
-    return `${rank}rd`;
+  if (rank === 3) {
+    return "\uD83E\uDD49";
   }
-
-  return `${rank}th`;
+  return `#${rank}`;
 }
 
 function getOrderedSuitsByPosition(positions) {
@@ -80,6 +77,8 @@ export class RaceScreen {
     this.playerSuitId = null;
     this.trackLength = 10;
     this.ante = 10;
+    this.instantResolveEnabled = false;
+    this.leaderboardNodes = new Map();
 
     this.handlers = {
       onRaceFinished: () => {}
@@ -94,11 +93,12 @@ export class RaceScreen {
     this.handlers = { ...this.handlers, ...handlers };
   }
 
-  show({ playerSuitId, ante, trackLength }) {
+  show({ playerSuitId, ante, trackLength, instantResolveEnabled }) {
     this.stopRaceLoop();
     this.playerSuitId = playerSuitId;
     this.ante = ante;
     this.trackLength = trackLength;
+    this.instantResolveEnabled = Boolean(instantResolveEnabled);
     this.engine = new RaceEngine(trackLength);
 
     this.renderSummary();
@@ -143,16 +143,18 @@ export class RaceScreen {
       ].join(" ").trim();
 
       const laneCellsMarkup = SUITS.map((suit) => {
+        const position = positions[suit.id];
         const isCurrentPosition = length === positions[suit.id];
+        const isLit = length <= position;
         const isPlayerCurrentPosition = isCurrentPosition && suit.id === this.playerSuitId;
-        const laneColor = getLaneToneColor(suit.id, isCurrentPosition);
+        const laneColor = getLaneToneColor(suit.id, isLit);
         const markerMarkup = isCurrentPosition
           ? `<img class="lane-racer-icon${isPlayerCurrentPosition ? " player" : ""}" src="${suit.racerImage}" alt="" aria-hidden="true">`
           : "";
 
         return `
           <div
-            class="track-cell lane-cell ${suit.id}${isFinish ? " finish" : ""}${isCurrentPosition ? " lit" : ""}${isPlayerCurrentPosition ? " player-lit" : ""}"
+            class="track-cell lane-cell ${suit.id}${isFinish ? " finish" : ""}${isLit ? " lit" : ""}${isPlayerCurrentPosition ? " player-lit" : ""}"
             style="--lane-fill: ${laneColor};"
             data-suit-id="${suit.id}"
             data-length="${length}"
@@ -190,20 +192,72 @@ export class RaceScreen {
 
   renderLeaderboard(positions) {
     const orderedSuits = getOrderedSuitsByPosition(positions);
+    this.ensureLeaderboardNodes();
 
-    this.leaderboardEl.innerHTML = orderedSuits.map((suit, index) => {
+    const firstY = new Map();
+    this.leaderboardNodes.forEach((entryNode, suitId) => {
+      firstY.set(suitId, entryNode.getBoundingClientRect().top);
+    });
+
+    orderedSuits.forEach((suit, index) => {
       const rank = index + 1;
       const isLeader = rank === 1;
       const isPlayer = suit.id === this.playerSuitId;
+      const entryNode = this.leaderboardNodes.get(suit.id);
 
-      return `
-        <div class="leaderboard-entry${isLeader ? " leader" : ""}${isPlayer ? " player" : ""}">
-          <span class="leaderboard-rank">${getRankLabel(rank)}</span>
-          <img class="leaderboard-racer" src="${suit.racerImage}" alt="${suit.name} racer">
-          <span class="leaderboard-distance">L${positions[suit.id]}</span>
-        </div>
+      entryNode.classList.toggle("leader", isLeader);
+      entryNode.classList.toggle("player", isPlayer);
+      entryNode.querySelector(".leaderboard-rank").textContent = getRankLabel(rank);
+      entryNode.querySelector(".leaderboard-distance").textContent = `L${positions[suit.id]}`;
+
+      this.leaderboardEl.appendChild(entryNode);
+    });
+
+    this.animateLeaderboardReorder(firstY);
+  }
+
+  ensureLeaderboardNodes() {
+    if (this.leaderboardNodes.size === SUITS.length) {
+      return;
+    }
+
+    this.leaderboardNodes.clear();
+    this.leaderboardEl.innerHTML = "";
+
+    SUITS.forEach((suit) => {
+      const entryNode = document.createElement("div");
+      entryNode.className = "leaderboard-entry";
+      entryNode.dataset.suitId = suit.id;
+      entryNode.innerHTML = `
+        <span class="leaderboard-rank"></span>
+        <img class="leaderboard-racer" src="${suit.racerImage}" alt="${suit.name} racer">
+        <span class="leaderboard-distance">L0</span>
       `;
-    }).join("");
+
+      this.leaderboardNodes.set(suit.id, entryNode);
+      this.leaderboardEl.appendChild(entryNode);
+    });
+  }
+
+  animateLeaderboardReorder(firstY) {
+    this.leaderboardNodes.forEach((entryNode, suitId) => {
+      const previousY = firstY.get(suitId);
+      if (previousY === undefined) {
+        return;
+      }
+
+      const currentY = entryNode.getBoundingClientRect().top;
+      const deltaY = previousY - currentY;
+      if (Math.abs(deltaY) < 0.5) {
+        return;
+      }
+
+      entryNode.style.transition = "none";
+      entryNode.style.transform = `translateY(${deltaY}px)`;
+      void entryNode.offsetWidth;
+      entryNode.style.transition = "transform 280ms ease";
+      entryNode.style.transform = "translateY(0)";
+    });
   }
 
   setDrawCard(suitId) {
@@ -228,11 +282,45 @@ export class RaceScreen {
     }
 
     this.startButton.disabled = true;
-    this.startButton.textContent = "Racing...";
+    this.startButton.textContent = this.instantResolveEnabled ? "Resolving..." : "Racing...";
+
+    if (this.instantResolveEnabled) {
+      this.resolveRaceInstantly();
+      return;
+    }
 
     this.intervalId = setInterval(() => {
       this.runTurn();
     }, RACE_TICK_MS);
+  }
+
+  resolveRaceInstantly() {
+    if (!this.engine) {
+      return;
+    }
+
+    let turnResult = null;
+    const maxTurns = Math.max(30, this.trackLength * 250);
+
+    for (let index = 0; index < maxTurns; index += 1) {
+      turnResult = this.engine.playTurn();
+      if (turnResult.winnerSuitId) {
+        break;
+      }
+    }
+
+    if (!turnResult) {
+      return;
+    }
+
+    this.setDrawCard(turnResult.drawnSuitId);
+    this.renderRaceState(turnResult);
+
+    if (turnResult.winnerSuitId) {
+      window.setTimeout(() => {
+        this.finishRace(turnResult);
+      }, 420);
+    }
   }
 
   runTurn() {
@@ -250,13 +338,14 @@ export class RaceScreen {
     this.stopRaceLoop();
     this.startButton.textContent = "Race Complete";
     this.startButton.disabled = true;
+    const resultDelayMs = this.instantResolveEnabled ? 260 : 1100;
 
     window.setTimeout(() => {
       this.handlers.onRaceFinished({
         winnerSuitId: turnResult.winnerSuitId,
         turnCount: turnResult.turnCount
       });
-    }, 1100);
+    }, resultDelayMs);
   }
 
   stopRaceLoop() {

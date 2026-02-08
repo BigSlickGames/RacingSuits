@@ -1,6 +1,9 @@
+import { getSuitById } from "../data/suits.js";
+
 export class AnteSelectionScreen {
   constructor({
     screenEl,
+    racerImageEl,
     sliderEl,
     minLabelEl,
     maxLabelEl,
@@ -10,6 +13,7 @@ export class AnteSelectionScreen {
     confirmButton
   }) {
     this.screenEl = screenEl;
+    this.racerImageEl = racerImageEl;
     this.sliderEl = sliderEl;
     this.minLabelEl = minLabelEl;
     this.maxLabelEl = maxLabelEl;
@@ -49,7 +53,7 @@ export class AnteSelectionScreen {
     this.handlers = { ...this.handlers, ...handlers };
   }
 
-  show({ chips, ante, anteOptions }) {
+  show({ chips, ante, anteOptions, selectedSuitId }) {
     this.currentChips = chips;
     this.anteOptions = anteOptions;
     this.chipsEl.textContent = String(chips);
@@ -57,6 +61,7 @@ export class AnteSelectionScreen {
     this.availableAntes = this.getEnabledAnteOptions();
     this.currentAnte = this.resolveAnte(ante);
 
+    this.renderSelectedRacer(selectedSuitId);
     this.renderSlider();
     this.refreshAnteValue();
     this.confirmButton.disabled = this.currentAnte === null;
@@ -65,6 +70,18 @@ export class AnteSelectionScreen {
 
   hide() {
     this.screenEl.classList.remove("active");
+  }
+
+  renderSelectedRacer(selectedSuitId) {
+    const suit = getSuitById(selectedSuitId);
+    if (!suit) {
+      this.racerImageEl.removeAttribute("src");
+      this.racerImageEl.alt = "";
+      return;
+    }
+
+    this.racerImageEl.src = suit.racerImage;
+    this.racerImageEl.alt = `${suit.name} racer`;
   }
 
   getEnabledAnteOptions() {
