@@ -37,9 +37,20 @@ export class SuitSelectionScreen {
   render() {
     const cardsMarkup = SUITS.map((suit) => {
       return `
-        <button class="suit-option ${suit.id}" data-suit-id="${suit.id}" type="button">
-          <span class="suit-symbol">${suit.symbol}</span>
-          <span class="suit-name">${suit.name}</span>
+        <button
+          class="suit-option suit-image-only ${suit.id}"
+          data-suit-id="${suit.id}"
+          type="button"
+          aria-label="${suit.name}"
+          title="${suit.name}"
+        >
+          <img
+            class="suit-racer-image"
+            src="${suit.racerImage}"
+            alt="${suit.name} racer"
+            loading="eager"
+            decoding="sync"
+          >
         </button>
       `;
     }).join("");

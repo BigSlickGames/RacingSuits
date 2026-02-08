@@ -25,6 +25,8 @@ body {
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
+  display: flex;
+  justify-content: center;
   color: var(--paper);
   font-family: "Trebuchet MS", "Verdana", sans-serif;
   overflow-x: hidden;
@@ -73,27 +75,74 @@ body::before {
 }
 
 .app-shell {
-  width: min(1080px, 94vw);
-  margin: clamp(0.7rem, 2.8vw, 1.25rem) auto;
-  padding: 1.5rem;
-  border-radius: 24px;
+  width: min(430px, 100vw);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: clamp(0.85rem, 3.6vw, 1.15rem);
+  border-radius: 0;
   border: 2px solid var(--panel-edge);
   background: var(--panel);
   backdrop-filter: blur(8px);
   box-shadow: 0 18px 45px rgba(8, 5, 23, 0.5);
 }
 
+.app-shell.loading .app-header {
+  display: none;
+}
+
 .app-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 1.3rem;
+  position: relative;
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+  padding: 0.9rem;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 18px 32px rgba(5, 3, 18, 0.34);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+.app-header.hidden {
+  display: none;
+}
+
+.app-header::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 20px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(255, 255, 255, 0.35), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(0, 212, 179, 0.2), transparent 45%);
+  opacity: 0.7;
+}
+
+.app-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+.player-meta {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.player-kicker {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #e5f8ff;
 }
 
 h1 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(1.35rem, 6vw, 1.95rem);
   letter-spacing: 0.05em;
   font-family: "Impact", "Trebuchet MS", sans-serif;
   text-transform: uppercase;
@@ -107,23 +156,51 @@ h3 {
 }
 
 .tagline {
-  margin: 0.3rem 0 0;
-  color: #e6ffe8;
+  margin: 0;
+  color: #eef7ff;
   font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+.player-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.stat-pill {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 14px;
+  padding: 0.56rem 0.62rem;
+  background: rgba(255, 255, 255, 0.1);
+  display: grid;
+  gap: 0.16rem;
+}
+
+.stat-pill.primary {
+  background: linear-gradient(135deg, rgba(255, 183, 3, 0.32), rgba(58, 134, 255, 0.25));
+  border-color: rgba(255, 234, 177, 0.55);
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #f6fbff;
+  opacity: 0.9;
+}
+
+.stat-value {
+  font-size: 1.22rem;
+  line-height: 1;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.stat-soon {
+  font-size: 0.92rem;
   letter-spacing: 0.03em;
-}
-
-.chip-display {
-  min-width: 170px;
-  text-align: right;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-#chip-count {
-  display: block;
-  font-size: 2rem;
-  color: var(--teal);
+  color: #d9f2ff;
 }
 
 .screen {
@@ -135,46 +212,77 @@ h3 {
   display: block;
 }
 
+.banner-screen.active {
+  display: flex;
+}
+
+.banner-screen {
+  min-height: calc(100dvh - clamp(1.7rem, 7vw, 2.3rem));
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  gap: 0;
+}
+
+.banner-image {
+  width: 100%;
+  max-width: 400px;
+  max-height: 78dvh;
+  object-fit: contain;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 183, 3, 0.42);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+}
+
 .suit-options {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.95rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
   margin-bottom: 1.1rem;
 }
 
 .suit-option {
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  min-height: 112px;
-  padding: 1rem 0.75rem;
+  border: 0;
+  border-radius: 20px;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  padding: 0.2rem;
   color: var(--paper);
-  background: rgba(255, 255, 255, 0.05);
-  font-weight: 700;
+  background: transparent;
   cursor: pointer;
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.suit-option.suit-image-only {
+  gap: 0;
 }
 
 .suit-option:hover {
-  transform: translateY(-2px);
-  border-color: var(--marigold);
+  transform: translateY(-3px) scale(1.02);
+  filter: brightness(1.05);
 }
 
 .suit-option.selected {
-  border-color: var(--marigold);
-  box-shadow: 0 0 0 3px rgba(255, 183, 3, 0.2);
-  transform: translateY(-3px);
+  transform: translateY(-4px) scale(1.04);
 }
 
-.suit-symbol {
-  display: block;
-  font-size: 2.2rem;
-  line-height: 1;
+.suit-racer-image {
+  width: 100%;
+  height: 100%;
+  max-width: 188px;
+  max-height: 188px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
 }
 
-.suit-name {
-  display: block;
-  margin-top: 0.35rem;
-  font-size: 1rem;
+.suit-option.selected .suit-racer-image {
+  filter:
+    drop-shadow(0 0 14px rgba(255, 183, 3, 0.5))
+    drop-shadow(0 14px 20px rgba(0, 0, 0, 0.42));
 }
 
 .ante-panel {
@@ -449,14 +557,12 @@ h3 {
 }
 
 .racer-token.hearts,
-.suit-option.hearts .suit-symbol,
 .draw-card.hearts,
 .track-cell.side-card-cell.hearts {
   background: linear-gradient(140deg, #ff7b7b, #e11d48);
 }
 
 .racer-token.diamonds,
-.suit-option.diamonds .suit-symbol,
 .draw-card.diamonds,
 .track-cell.side-card-cell.diamonds {
   background: linear-gradient(140deg, #c8ffc8, #7ddf92);
@@ -464,7 +570,6 @@ h3 {
 }
 
 .racer-token.clubs,
-.suit-option.clubs .suit-symbol,
 .draw-card.clubs,
 .track-cell.side-card-cell.clubs {
   background: linear-gradient(140deg, #cbf0ff, #78c6ef);
@@ -472,7 +577,6 @@ h3 {
 }
 
 .racer-token.spades,
-.suit-option.spades .suit-symbol,
 .draw-card.spades,
 .track-cell.side-card-cell.spades {
   background: linear-gradient(140deg, #888888, #272727);
@@ -626,19 +730,21 @@ button,
 
 @media (max-width: 720px) {
   .app-shell {
-    width: min(1080px, 96vw);
     padding: 1rem;
     border-radius: 18px;
   }
 
   .app-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.45rem;
+    gap: 0.72rem;
+    padding: 0.78rem;
   }
 
-  .chip-display {
-    text-align: left;
+  .stat-pill {
+    padding: 0.5rem 0.55rem;
+  }
+
+  .stat-value {
+    font-size: 1.05rem;
   }
 
   .suit-options {
@@ -671,9 +777,10 @@ button,
 
 @media (max-width: 520px) {
   .app-shell {
-    margin: 0.45rem auto;
+    margin: 0 auto;
+    min-height: 100dvh;
     padding: 0.8rem;
-    border-radius: 14px;
+    border-radius: 0;
   }
 
   h1 {
@@ -682,6 +789,14 @@ button,
 
   .tagline {
     font-size: 0.92rem;
+  }
+
+  .player-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stat-pill.primary {
+    grid-column: 1 / -1;
   }
 
   .screen-actions,
@@ -697,8 +812,11 @@ button,
   }
 
   .suit-option {
-    min-height: 104px;
-    padding: 0.8rem 0.55rem;
+    padding: 0.35rem;
+  }
+
+  .banner-screen {
+    min-height: calc(100dvh - 1.6rem);
   }
 
   .draw-area {
@@ -744,11 +862,20 @@ button,
 }
 
 @media (max-width: 400px) {
-  .chip-display {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
+  .player-stats {
+    gap: 0.4rem;
+  }
+
+  .stat-pill {
+    padding: 0.45rem 0.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.64rem;
+  }
+
+  .stat-value {
+    font-size: 0.95rem;
   }
 
   .track-board {
@@ -767,6 +894,14 @@ button,
 
   .track-header-cell.suit-header .header-name {
     font-size: 0.45rem;
+  }
+}
+
+@media (min-width: 521px) {
+  .app-shell {
+    margin: clamp(0.5rem, 1.8vh, 1rem) auto;
+    min-height: calc(100dvh - clamp(1rem, 3.2vh, 2rem));
+    border-radius: 24px;
   }
 }
 

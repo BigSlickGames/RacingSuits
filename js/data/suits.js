@@ -1,8 +1,28 @@
 export const SUITS = Object.freeze([
-  { id: "hearts", name: "Hearts", symbol: "♥" },
-  { id: "clubs", name: "Clubs", symbol: "♣" },
-  { id: "diamonds", name: "Diamonds", symbol: "♦" },
-  { id: "spades", name: "Spades", symbol: "♠" }
+  {
+    id: "hearts",
+    name: "Hearts",
+    symbol: "\u2665",
+    racerImage: "./assets/hearts_racer.png"
+  },
+  {
+    id: "clubs",
+    name: "Clubs",
+    symbol: "\u2663",
+    racerImage: "./assets/clubs_racer.png"
+  },
+  {
+    id: "diamonds",
+    name: "Diamonds",
+    symbol: "\u2666",
+    racerImage: "./assets/diamonds_racer.png"
+  },
+  {
+    id: "spades",
+    name: "Spades",
+    symbol: "\u2660",
+    racerImage: "./assets/spades_racer.png"
+  }
 ]);
 
 const suitMap = SUITS.reduce((accumulator, suit) => {
@@ -13,3 +33,4 @@ const suitMap = SUITS.reduce((accumulator, suit) => {
 export function getSuitById(suitId) {
   return suitMap[suitId] ?? null;
 }
+

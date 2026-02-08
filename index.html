@@ -10,19 +10,39 @@
   <div class="festival-glow glow-a" aria-hidden="true"></div>
   <div class="festival-glow glow-b" aria-hidden="true"></div>
 
-  <main id="app" class="app-shell">
-    <header class="app-header">
-      <div>
-        <h1>Racing Suits</h1>
-        <p class="tagline">Carnival Track Clash</p>
+  <main id="app" class="app-shell loading">
+    <header class="app-header" aria-label="Player panel">
+      <div class="player-meta">
+        <p class="player-kicker">Player Garage</p>
+        <h1>Selection Hub</h1>
+        <p class="tagline">Pick your racer and lock your ante.</p>
       </div>
-      <div class="chip-display">
-        Festival Chips
-        <span id="chip-count">200</span>
+      <div class="player-stats">
+        <div class="stat-pill primary">
+          <span class="stat-label">Chips</span>
+          <span id="chip-count" class="stat-value">200</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-label">Wins</span>
+          <span id="stat-wins" class="stat-value stat-soon">Soon</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-label">Streak</span>
+          <span id="stat-streak" class="stat-value stat-soon">Soon</span>
+        </div>
       </div>
     </header>
 
-    <section id="screen-suit" class="screen active" aria-labelledby="suit-title">
+    <section id="screen-banner" class="screen banner-screen active" aria-label="Loading screen">
+      <img
+        src="./assets/racing_suits_banner.png"
+        alt="Racing Suits banner"
+        class="banner-image"
+        fetchpriority="high"
+      >
+    </section>
+
+    <section id="screen-suit" class="screen" aria-labelledby="suit-title">
       <h2 id="suit-title">Choose Your Suit</h2>
       <div id="suit-options" class="suit-options"></div>
       <button id="suit-confirm-btn" class="action-btn" disabled>Continue to Ante</button>
