@@ -765,10 +765,12 @@ h3 {
 }
 
 .race-grid {
+  position: relative;
   display: grid;
   gap: var(--track-gap);
   width: max-content;
   align-content: center;
+  contain: layout paint;
 }
 
 .track-row {
@@ -805,14 +807,35 @@ h3 {
 }
 
 .lane-racer-icon {
-  width: 86%;
-  height: 86%;
+  width: calc(var(--track-cell-size) * 0.86);
+  height: calc(var(--track-cell-size) * 0.86);
   object-fit: contain;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
 }
 
-.lane-racer-icon.player {
-  transform: scale(1.05);
+.race-marker-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.lane-racer-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+.lane-racer-marker .lane-racer-icon {
+  transform: translate(-50%, -50%);
+}
+
+.lane-racer-marker.player .lane-racer-icon {
+  transform: translate(-50%, -50%) scale(1.08);
 }
 
 .track-row.finish-row .track-cell.lane-cell {

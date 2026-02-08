@@ -1,4 +1,7 @@
 import { SUITS } from "../data/suits.js";
+import { RaceEngine } from "../engine/raceEngine.js";
+import { ReplayManager } from "../replay/replayManager.js";
+import { StreakManager } from "./streakManager.js";
 
 const ANTE_OPTIONS = Object.freeze([5, 10, 20, 50, 100, 200]);
 const MIN_ANTE = ANTE_OPTIONS[0];
@@ -8,6 +11,12 @@ const SUIT_ORDER = SUITS.reduce((accumulator, suit, index) => {
   accumulator[suit.id] = index;
   return accumulator;
 }, {});
+
+const DEFAULT_SETTINGS = Object.freeze({
+  soundEnabled: true,
+  musicEnabled: true,
+  instantWinEnabled: false
+});
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -54,6 +63,20 @@ function createSuitStats() {
   }, {});
 }
 
+function createSeedFromEntropy(counter = 0) {
+  const timeSeed = Date.now().toString(36);
+  const counterSeed = counter.toString(36);
+
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const values = new Uint32Array(2);
+    crypto.getRandomValues(values);
+    return `${timeSeed}-${counterSeed}-${values[0].toString(36)}${values[1].toString(36)}`;
+  }
+
+  const fallback = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER).toString(36);
+  return `${timeSeed}-${counterSeed}-${fallback}`;
+}
+
 export class GameState {
   constructor(startingChips = STARTING_CHIPS) {
     this.startingChips = startingChips;
@@ -61,12 +84,23 @@ export class GameState {
     this.selectedSuitId = null;
     this.ante = MIN_ANTE;
     this.wins = 0;
-    this.currentStreak = 0;
-    this.bestStreak = 0;
     this.totalGames = 0;
     this.totalChipDelta = 0;
     this.totalChipsWon = 0;
     this.suitStats = createSuitStats();
+    this.streakManager = new StreakManager();
+    this.settings = { ...DEFAULT_SETTINGS };
+    this.raceCounter = 0;
+    this.activeRaceSession = null;
+    this.replayArchive = [];
+  }
+
+  get currentStreak() {
+    return this.streakManager.current;
+  }
+
+  get bestStreak() {
+    return this.streakManager.best;
   }
 
   selectSuit(suitId) {
@@ -88,6 +122,109 @@ export class GameState {
   setAnte(nextAnte) {
     this.ante = normalizeAnte(nextAnte, this.chips);
     return this.ante;
+  }
+
+  setSetting(settingKey, settingValue) {
+    if (!(settingKey in DEFAULT_SETTINGS)) {
+      return;
+    }
+
+    this.settings[settingKey] = Boolean(settingValue);
+  }
+
+  getSettings() {
+    return { ...this.settings };
+  }
+
+  createRaceSession({ seed = null, trackLength = TRACK_LENGTH } = {}) {
+    const raceSeed = seed ?? createSeedFromEntropy(this.raceCounter);
+    this.raceCounter += 1;
+
+    const raceResult = RaceEngine.run({
+      seed: raceSeed,
+      config: {
+        trackLength,
+        suitIds: SUITS.map((suit) => suit.id),
+        checkpointsEnabled: true
+      }
+    });
+
+    const replay = ReplayManager.createReplay({
+      seed: raceResult.seed,
+      config: raceResult.config,
+      frames: raceResult.frames,
+      events: raceResult.events,
+      winnerSuitId: raceResult.winnerSuitId,
+      turnCount: raceResult.turnCount
+    });
+
+    const session = {
+      id: replay.id,
+      seed: raceResult.seed,
+      raceResult,
+      replay,
+      settled: false,
+      createdAt: Date.now()
+    };
+
+    this.activeRaceSession = session;
+    this.replayArchive.unshift(replay);
+    this.replayArchive = this.replayArchive.slice(0, 24);
+
+    return session;
+  }
+
+  getActiveRaceSession() {
+    return this.activeRaceSession;
+  }
+
+  clearActiveRaceSession() {
+    this.activeRaceSession = null;
+  }
+
+  getLatestReplay() {
+    return this.replayArchive[0] ?? null;
+  }
+
+  getReplayFromSeed(seed, config) {
+    return ReplayManager.buildReplayFromSeed({
+      seed,
+      config: {
+        trackLength: config?.trackLength ?? TRACK_LENGTH,
+        suitIds: config?.suitIds ?? SUITS.map((suit) => suit.id),
+        checkpointsEnabled: config?.checkpointsEnabled ?? true
+      }
+    });
+  }
+
+  loadReplaySession(replay) {
+    const session = {
+      id: replay.id,
+      seed: replay.seed,
+      raceResult: {
+        seed: replay.seed,
+        config: replay.config,
+        winnerSuitId: replay.winnerSuitId,
+        turnCount: replay.turnCount,
+        frames: replay.frames,
+        events: replay.events
+      },
+      replay,
+      settled: false,
+      replayOnly: true,
+      createdAt: Date.now()
+    };
+
+    this.activeRaceSession = session;
+    return session;
+  }
+
+  getGhostReplayPayload(replay) {
+    return ReplayManager.toGhostPayload(replay);
+  }
+
+  hydrateGhostReplay(payload) {
+    return ReplayManager.fromGhostPayload(payload);
   }
 
   getSuitLeaderboards() {
@@ -134,6 +271,10 @@ export class GameState {
   }
 
   settleRace(winnerSuitId) {
+    if (!this.selectedSuitId) {
+      throw new Error("A suit must be selected before settling a race.");
+    }
+
     const won = this.selectedSuitId === winnerSuitId;
     const chipDelta = won ? this.ante : -this.ante;
     const selectedSuitStats = this.suitStats[this.selectedSuitId];
@@ -147,10 +288,10 @@ export class GameState {
       selectedSuitStats.chipsRisked += this.ante;
     }
 
+    const streakSnapshot = this.streakManager.recordResult(won);
+
     if (won) {
       this.wins += 1;
-      this.currentStreak += 1;
-      this.bestStreak = Math.max(this.bestStreak, this.currentStreak);
       this.totalChipsWon += chipDelta;
       if (selectedSuitStats) {
         selectedSuitStats.wins += 1;
@@ -160,11 +301,8 @@ export class GameState {
           selectedSuitStats.currentStreak
         );
       }
-    } else {
-      this.currentStreak = 0;
-      if (selectedSuitStats) {
-        selectedSuitStats.currentStreak = 0;
-      }
+    } else if (selectedSuitStats) {
+      selectedSuitStats.currentStreak = 0;
     }
 
     this.chips = Math.max(0, this.chips + chipDelta);
@@ -177,14 +315,23 @@ export class GameState {
 
     this.ante = clamp(this.ante, MIN_ANTE, this.chips);
 
+    if (this.activeRaceSession && !this.activeRaceSession.settled) {
+      this.activeRaceSession.settled = true;
+      this.activeRaceSession.settlement = {
+        won,
+        chipDelta,
+        settledAt: Date.now()
+      };
+    }
+
     return {
       won,
       chipDelta,
       chipsRemaining: this.chips,
       refillApplied,
       wins: this.wins,
-      currentStreak: this.currentStreak,
-      bestStreak: this.bestStreak,
+      currentStreak: streakSnapshot.current,
+      bestStreak: streakSnapshot.best,
       totalGames: this.totalGames,
       totalChipDelta: this.totalChipDelta,
       totalChipsWon: this.totalChipsWon

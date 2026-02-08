@@ -1,25 +1,27 @@
 import { SUITS } from "../data/suits.js";
+import { SeededRNG } from "../utils/seededRng.js";
 
-const COPIES_PER_SUIT = 13;
+const DEFAULT_COPIES_PER_SUIT = 13;
 
 export class SuitDeck {
-  constructor() {
+  constructor({
+    suitIds = SUITS.map((suit) => suit.id),
+    copiesPerSuit = DEFAULT_COPIES_PER_SUIT,
+    rng = null
+  } = {}) {
+    this.suitIds = [...suitIds];
+    this.copiesPerSuit = copiesPerSuit;
+    this.rng = rng ?? new SeededRNG(`suit-deck:${this.suitIds.join(",")}:${this.copiesPerSuit}`);
     this.cards = [];
     this.reset();
   }
 
   reset() {
-    this.cards = SUITS.flatMap((suit) => {
-      return Array(COPIES_PER_SUIT).fill(suit.id);
+    this.cards = this.suitIds.flatMap((suitId) => {
+      return Array(this.copiesPerSuit).fill(suitId);
     });
-    this.shuffle();
-  }
 
-  shuffle() {
-    for (let index = this.cards.length - 1; index > 0; index -= 1) {
-      const swapIndex = Math.floor(Math.random() * (index + 1));
-      [this.cards[index], this.cards[swapIndex]] = [this.cards[swapIndex], this.cards[index]];
-    }
+    this.rng.shuffleInPlace(this.cards);
   }
 
   draw() {
@@ -29,3 +31,7 @@ export class SuitDeck {
     return this.cards.pop();
   }
 }
+
+export const SUIT_DECK_CONSTANTS = Object.freeze({
+  DEFAULT_COPIES_PER_SUIT
+});

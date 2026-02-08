@@ -11,11 +11,6 @@ const gameState = new GameState(GAME_CONSTANTS.STARTING_CHIPS);
 let currentScreenKey = "banner";
 let menuReturnTarget = "suit";
 let activeLeaderboardPage = "wins";
-const settingsState = {
-  soundEnabled: true,
-  musicEnabled: true,
-  instantWinEnabled: false
-};
 
 const appShellEl = document.getElementById("app");
 const appHeaderEl = document.querySelector(".app-header");
@@ -154,9 +149,10 @@ function updateLeaderboardDisplay() {
 }
 
 function syncSettingsControls() {
-  settingsSoundToggle.checked = settingsState.soundEnabled;
-  settingsMusicToggle.checked = settingsState.musicEnabled;
-  settingsInstantWinToggle.checked = settingsState.instantWinEnabled;
+  const settings = gameState.getSettings();
+  settingsSoundToggle.checked = settings.soundEnabled;
+  settingsMusicToggle.checked = settings.musicEnabled;
+  settingsInstantWinToggle.checked = settings.instantWinEnabled;
 }
 
 function setLeaderboardPage(pageId) {
@@ -301,7 +297,25 @@ function showSettingsScreen() {
   setCurrentScreen("settings");
 }
 
+function ensureActiveRaceSession() {
+  const activeSession = gameState.getActiveRaceSession();
+  if (activeSession && !activeSession.settled) {
+    return activeSession;
+  }
+
+  return gameState.createRaceSession({
+    trackLength: GAME_CONSTANTS.TRACK_LENGTH
+  });
+}
+
 function showRaceScreen() {
+  if (!gameState.selectedSuitId) {
+    showSuitSelectionScreen();
+    return;
+  }
+
+  const session = ensureActiveRaceSession();
+
   hideAllScreens();
   setLoadingMode(false);
   setSelectionHeaderVisible(false);
@@ -310,14 +324,15 @@ function showRaceScreen() {
   raceScreen.show({
     playerSuitId: gameState.selectedSuitId,
     ante: gameState.ante,
-    trackLength: GAME_CONSTANTS.TRACK_LENGTH,
-    instantResolveEnabled: settingsState.instantWinEnabled
+    raceResult: session.raceResult,
+    replay: session.replay,
+    instantResolveEnabled: gameState.getSettings().instantWinEnabled
   });
 
   setCurrentScreen("race");
 }
 
-function showResultScreen({ winnerSuitId, turnCount, settlement }) {
+function showResultScreen({ winnerSuitId, turnCount, settlement, seed }) {
   hideAllScreens();
   setLoadingMode(false);
   setSelectionHeaderVisible(false);
@@ -329,7 +344,8 @@ function showResultScreen({ winnerSuitId, turnCount, settlement }) {
     ante: gameState.ante,
     turnCount,
     settlement,
-    startingChips: GAME_CONSTANTS.STARTING_CHIPS
+    startingChips: GAME_CONSTANTS.STARTING_CHIPS,
+    seed
   });
 
   setCurrentScreen("result");
@@ -379,6 +395,7 @@ function returnFromMenu() {
 }
 
 function goHome() {
+  gameState.clearActiveRaceSession();
   menuReturnTarget = "suit";
   showSuitSelectionScreen();
 }
@@ -448,21 +465,32 @@ anteSelectionScreen.init({
   },
   onAnteLocked: (ante) => {
     gameState.setAnte(ante);
+    gameState.clearActiveRaceSession();
+    gameState.createRaceSession({
+      trackLength: GAME_CONSTANTS.TRACK_LENGTH
+    });
     showRaceScreen();
   }
 });
 
 raceScreen.init({
-  onRaceFinished: ({ winnerSuitId, turnCount }) => {
+  onRaceFinished: ({ winnerSuitId, turnCount, seed }) => {
     const settlement = gameState.settleRace(winnerSuitId);
+    const activeSession = gameState.getActiveRaceSession();
     updateChipDisplay();
     updateLeaderboardDisplay();
-    showResultScreen({ winnerSuitId, turnCount, settlement });
+    showResultScreen({
+      winnerSuitId,
+      turnCount,
+      settlement,
+      seed: seed ?? activeSession?.seed
+    });
   }
 });
 
 resultsScreen.init({
   onRaceAgain: () => {
+    gameState.clearActiveRaceSession();
     showSuitSelectionScreen();
   }
 });
@@ -516,15 +544,15 @@ settingsMenuButton.addEventListener("click", () => {
 });
 
 settingsSoundToggle.addEventListener("change", () => {
-  settingsState.soundEnabled = settingsSoundToggle.checked;
+  gameState.setSetting("soundEnabled", settingsSoundToggle.checked);
 });
 
 settingsMusicToggle.addEventListener("change", () => {
-  settingsState.musicEnabled = settingsMusicToggle.checked;
+  gameState.setSetting("musicEnabled", settingsMusicToggle.checked);
 });
 
 settingsInstantWinToggle.addEventListener("change", () => {
-  settingsState.instantWinEnabled = settingsInstantWinToggle.checked;
+  gameState.setSetting("instantWinEnabled", settingsInstantWinToggle.checked);
 });
 
 statsPageWinsButton.addEventListener("click", () => {
@@ -538,6 +566,36 @@ statsPageStreakButton.addEventListener("click", () => {
 statsPageChipsButton.addEventListener("click", () => {
   setLeaderboardPage("chips");
 });
+
+window.RacingSuitsReplay = {
+  replayFromSeed(seed) {
+    if (!gameState.selectedSuitId) {
+      gameState.selectSuit(SUITS[0].id);
+    }
+    const replay = gameState.getReplayFromSeed(seed, {
+      trackLength: GAME_CONSTANTS.TRACK_LENGTH
+    });
+    gameState.loadReplaySession(replay);
+    showRaceScreen();
+    return replay;
+  },
+  latestGhostPayload() {
+    const latestReplay = gameState.getLatestReplay();
+    if (!latestReplay) {
+      return null;
+    }
+    return gameState.getGhostReplayPayload(latestReplay);
+  },
+  hydrateGhostPayload(payload) {
+    if (!gameState.selectedSuitId) {
+      gameState.selectSuit(SUITS[0].id);
+    }
+    const replay = gameState.hydrateGhostReplay(payload);
+    gameState.loadReplaySession(replay);
+    showRaceScreen();
+    return replay;
+  }
+};
 
 updateChipDisplay();
 updateLeaderboardDisplay();

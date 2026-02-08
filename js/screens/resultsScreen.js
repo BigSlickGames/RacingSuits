@@ -67,7 +67,15 @@ export class ResultsScreen {
     this.confettiEl.innerHTML = pieces.join("");
   }
 
-  show({ winnerSuitId, playerSuitId, ante, turnCount, settlement, startingChips }) {
+  show({
+    winnerSuitId,
+    playerSuitId,
+    ante,
+    turnCount,
+    settlement,
+    startingChips,
+    seed
+  }) {
     const winner = getSuitById(winnerSuitId);
     const playerSuit = getSuitById(playerSuitId);
 
@@ -84,6 +92,9 @@ export class ResultsScreen {
 
     summaryText += ` The race ended after ${turnCount} flips.`;
     summaryText += ` Chips now: ${settlement.chipsRemaining}.`;
+    if (seed) {
+      summaryText += ` Seed: ${seed}.`;
+    }
 
     if (settlement.refillApplied) {
       summaryText += ` You dropped below 10 chips, so the carnival host refilled you to ${startingChips}.`;
