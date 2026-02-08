@@ -6,10 +6,19 @@ export class SuitSelectionScreen {
     this.optionsEl = optionsEl;
     this.confirmButton = confirmButton;
     this.selectedSuitId = null;
+
     this.handlers = {
       onSuitPicked: () => {},
       onSuitLocked: () => {}
     };
+
+    this.optionsEl.addEventListener("click", (event) => {
+      const optionButton = event.target.closest("[data-suit-id]");
+      if (!optionButton) {
+        return;
+      }
+      this.selectSuit(optionButton.dataset.suitId);
+    });
 
     this.confirmButton.addEventListener("click", () => {
       if (!this.selectedSuitId) {
@@ -25,7 +34,7 @@ export class SuitSelectionScreen {
 
   show(selectedSuitId) {
     this.selectedSuitId = selectedSuitId;
-    this.render();
+    this.renderSuitOptions();
     this.refreshSelection();
     this.screenEl.classList.add("active");
   }
@@ -34,7 +43,7 @@ export class SuitSelectionScreen {
     this.screenEl.classList.remove("active");
   }
 
-  render() {
+  renderSuitOptions() {
     const cardsMarkup = SUITS.map((suit) => {
       return `
         <button
@@ -56,13 +65,6 @@ export class SuitSelectionScreen {
     }).join("");
 
     this.optionsEl.innerHTML = cardsMarkup;
-
-    const optionButtons = this.optionsEl.querySelectorAll("[data-suit-id]");
-    optionButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        this.selectSuit(button.dataset.suitId);
-      });
-    });
   }
 
   refreshSelection() {
@@ -83,3 +85,4 @@ export class SuitSelectionScreen {
     this.refreshSelection();
   }
 }
+

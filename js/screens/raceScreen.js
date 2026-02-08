@@ -2,24 +2,61 @@ import { SUITS, getSuitById } from "../data/suits.js";
 import { RaceEngine } from "../engine/raceEngine.js";
 
 const RACE_TICK_MS = 850;
-const MAX_LOG_ENTRIES = 10;
-const LANE_BASE_COLORS = Object.freeze({
-  hearts: [255, 94, 94],
-  clubs: [158, 223, 255],
-  diamonds: [167, 247, 176],
-  spades: [112, 112, 112]
+
+const LANE_TONES = Object.freeze({
+  hearts: {
+    dark: "rgb(54 20 29)",
+    lit: "rgb(245 82 118)"
+  },
+  clubs: {
+    dark: "rgb(21 45 64)",
+    lit: "rgb(86 197 255)"
+  },
+  diamonds: {
+    dark: "rgb(30 52 36)",
+    lit: "rgb(118 236 143)"
+  },
+  spades: {
+    dark: "rgb(34 34 42)",
+    lit: "rgb(174 174 188)"
+  }
 });
 
-function getLaneShadeColor(suitId, length, trackLength) {
-  const baseColor = LANE_BASE_COLORS[suitId] ?? [140, 140, 140];
-  const progress = trackLength === 0 ? 0 : length / trackLength;
-  const darkness = 0.08 + (progress * 0.55);
+function getLaneToneColor(suitId, isLit) {
+  const tone = LANE_TONES[suitId] ?? { dark: "rgb(38 38 46)", lit: "rgb(168 168 180)" };
+  return isLit ? tone.lit : tone.dark;
+}
 
-  const [r, g, b] = baseColor.map((channel) => {
-    return Math.max(16, Math.round(channel * (1 - darkness)));
+function getRankLabel(rank) {
+  if (rank % 10 === 1 && rank % 100 !== 11) {
+    return `${rank}st`;
+  }
+
+  if (rank % 10 === 2 && rank % 100 !== 12) {
+    return `${rank}nd`;
+  }
+
+  if (rank % 10 === 3 && rank % 100 !== 13) {
+    return `${rank}rd`;
+  }
+
+  return `${rank}th`;
+}
+
+function getOrderedSuitsByPosition(positions) {
+  const suitOrderMap = SUITS.reduce((accumulator, suit, index) => {
+    accumulator[suit.id] = index;
+    return accumulator;
+  }, {});
+
+  return [...SUITS].sort((left, right) => {
+    const positionDiff = positions[right.id] - positions[left.id];
+    if (positionDiff !== 0) {
+      return positionDiff;
+    }
+
+    return suitOrderMap[left.id] - suitOrderMap[right.id];
   });
-
-  return `rgb(${r} ${g} ${b})`;
 }
 
 export class RaceScreen {
@@ -27,23 +64,22 @@ export class RaceScreen {
     screenEl,
     summaryEl,
     gridEl,
+    leaderboardEl,
     drawCardEl,
-    startButton,
-    logEl
+    startButton
   }) {
     this.screenEl = screenEl;
     this.summaryEl = summaryEl;
     this.gridEl = gridEl;
+    this.leaderboardEl = leaderboardEl;
     this.drawCardEl = drawCardEl;
     this.startButton = startButton;
-    this.logEl = logEl;
 
     this.engine = null;
     this.intervalId = null;
     this.playerSuitId = null;
     this.trackLength = 10;
     this.ante = 10;
-    this.logEntries = [];
 
     this.handlers = {
       onRaceFinished: () => {}
@@ -64,13 +100,10 @@ export class RaceScreen {
     this.ante = ante;
     this.trackLength = trackLength;
     this.engine = new RaceEngine(trackLength);
-    this.logEntries = [];
 
     this.renderSummary();
     this.renderRaceState(this.engine.snapshot());
     this.setDrawCard(null);
-    this.logEntries = [];
-    this.logEl.innerHTML = "";
 
     this.startButton.disabled = false;
     this.startButton.textContent = "Start Race!";
@@ -85,7 +118,7 @@ export class RaceScreen {
   renderSummary() {
     const playerSuit = getSuitById(this.playerSuitId);
     this.summaryEl.innerHTML = `
-      Backing <strong>${playerSuit.symbol} ${playerSuit.name}</strong>
+      Backing <strong>${playerSuit.name}</strong>
       | Ante <strong>${this.ante} chips</strong>
       | Track <strong>${this.trackLength} lengths</strong>
     `;
@@ -93,30 +126,39 @@ export class RaceScreen {
 
   renderRaceState(snapshot) {
     this.renderGrid(snapshot.positions, snapshot.checkpoints);
+    this.renderLeaderboard(snapshot.positions);
   }
 
   renderGrid(positions, checkpoints) {
-    const headerCellsMarkup = SUITS.map((suit) => {
-      return `
-        <div class="track-header-cell suit-header ${suit.id}">
-          <span class="header-symbol">${suit.symbol}</span>
-          <span class="header-name">${suit.name}</span>
-        </div>
-      `;
-    }).join("");
-
     const rowMarkup = [];
 
     for (let length = this.trackLength; length >= 0; length -= 1) {
       const isFinish = length === this.trackLength;
       const isStart = length === 0;
 
-      const lengthLabel = isFinish ? "FINISH" : (isStart ? "START" : `L${length}`);
       const rowClasses = [
         "track-row",
         isFinish ? "finish-row" : "",
         isStart ? "start-row" : ""
       ].join(" ").trim();
+
+      const laneCellsMarkup = SUITS.map((suit) => {
+        const isCurrentPosition = length === positions[suit.id];
+        const isPlayerCurrentPosition = isCurrentPosition && suit.id === this.playerSuitId;
+        const laneColor = getLaneToneColor(suit.id, isCurrentPosition);
+        const markerMarkup = isCurrentPosition
+          ? `<img class="lane-racer-icon${isPlayerCurrentPosition ? " player" : ""}" src="${suit.racerImage}" alt="" aria-hidden="true">`
+          : "";
+
+        return `
+          <div
+            class="track-cell lane-cell ${suit.id}${isFinish ? " finish" : ""}${isCurrentPosition ? " lit" : ""}${isPlayerCurrentPosition ? " player-lit" : ""}"
+            style="--lane-fill: ${laneColor};"
+            data-suit-id="${suit.id}"
+            data-length="${length}"
+          >${markerMarkup}</div>
+        `;
+      }).join("");
 
       let sideCardMarkup = "";
       if (isStart || isFinish) {
@@ -129,48 +171,39 @@ export class RaceScreen {
           const revealedSuit = getSuitById(checkpoint.suitId);
           sideCardMarkup = `
             <div class="track-cell side-card-cell ${revealedSuit.id}" title="Length ${length} flipped ${revealedSuit.name}">
-              ${revealedSuit.symbol}
+              <img class="side-card-image" src="${revealedSuit.racerImage}" alt="${revealedSuit.name} card">
             </div>
           `;
         }
       }
 
-      const laneCellsMarkup = SUITS.map((suit) => {
-        const hasToken = positions[suit.id] === length;
-        const laneColor = getLaneShadeColor(suit.id, length, this.trackLength);
-        const tokenMarkup = hasToken
-          ? `<div class="racer-token ${suit.id}" aria-label="${suit.name} racer">${suit.symbol}</div>`
-          : "";
-
-        return `
-          <div
-            class="track-cell lane-cell ${suit.id}${isFinish ? " finish" : ""}${isStart ? " start" : ""}"
-            style="background-color: ${laneColor};"
-            data-suit-id="${suit.id}"
-            data-length="${length}"
-          >
-            ${tokenMarkup}
-          </div>
-        `;
-      }).join("");
-
       rowMarkup.push(`
         <div class="${rowClasses}">
-          <div class="track-header-cell length-cell">${lengthLabel}</div>
-          ${sideCardMarkup}
           ${laneCellsMarkup}
+          ${sideCardMarkup}
         </div>
       `);
     }
 
-    this.gridEl.innerHTML = `
-      <div class="track-header-row">
-        <div class="track-header-cell length-head">Length</div>
-        <div class="track-header-cell side-card-head">Card</div>
-        ${headerCellsMarkup}
-      </div>
-      ${rowMarkup.join("")}
-    `;
+    this.gridEl.innerHTML = rowMarkup.join("");
+  }
+
+  renderLeaderboard(positions) {
+    const orderedSuits = getOrderedSuitsByPosition(positions);
+
+    this.leaderboardEl.innerHTML = orderedSuits.map((suit, index) => {
+      const rank = index + 1;
+      const isLeader = rank === 1;
+      const isPlayer = suit.id === this.playerSuitId;
+
+      return `
+        <div class="leaderboard-entry${isLeader ? " leader" : ""}${isPlayer ? " player" : ""}">
+          <span class="leaderboard-rank">${getRankLabel(rank)}</span>
+          <img class="leaderboard-racer" src="${suit.racerImage}" alt="${suit.name} racer">
+          <span class="leaderboard-distance">L${positions[suit.id]}</span>
+        </div>
+      `;
+    }).join("");
   }
 
   setDrawCard(suitId) {
@@ -180,13 +213,13 @@ export class RaceScreen {
 
     if (!suitId) {
       this.drawCardEl.className = "draw-card face-down flip";
-      this.drawCardEl.textContent = "?";
+      this.drawCardEl.innerHTML = "<span class=\"draw-card-back\">?</span>";
       return;
     }
 
     const suit = getSuitById(suitId);
     this.drawCardEl.className = `draw-card ${suit.id} flip`;
-    this.drawCardEl.textContent = suit.symbol;
+    this.drawCardEl.innerHTML = `<img class="draw-card-image" src="${suit.racerImage}" alt="${suit.name} card">`;
   }
 
   startRace() {
@@ -204,25 +237,9 @@ export class RaceScreen {
 
   runTurn() {
     const turnResult = this.engine.playTurn();
-    const drawnSuit = getSuitById(turnResult.drawnSuitId);
 
     this.setDrawCard(turnResult.drawnSuitId);
     this.renderRaceState(turnResult);
-
-    this.pushLog(`${drawnSuit.symbol} ${drawnSuit.name} moves to length ${turnResult.movedTo}.`);
-
-    turnResult.checkpointEvents.forEach((event) => {
-      const setbackSuit = getSuitById(event.suitId);
-      if (event.to < event.from) {
-        this.pushLog(
-          `Length ${event.length} flips ${setbackSuit.symbol} ${setbackSuit.name}. It falls back to ${event.to}.`
-        );
-      } else {
-        this.pushLog(
-          `Length ${event.length} flips ${setbackSuit.symbol} ${setbackSuit.name}. It was already on that length.`
-        );
-      }
-    });
 
     if (turnResult.winnerSuitId) {
       this.finishRace(turnResult);
@@ -234,28 +251,12 @@ export class RaceScreen {
     this.startButton.textContent = "Race Complete";
     this.startButton.disabled = true;
 
-    const winner = getSuitById(turnResult.winnerSuitId);
-    this.pushLog(`${winner.symbol} ${winner.name} hits the finish line!`);
-
     window.setTimeout(() => {
       this.handlers.onRaceFinished({
         winnerSuitId: turnResult.winnerSuitId,
         turnCount: turnResult.turnCount
       });
     }, 1100);
-  }
-
-  pushLog(message) {
-    this.logEntries.push(message);
-    if (this.logEntries.length > MAX_LOG_ENTRIES) {
-      this.logEntries.shift();
-    }
-
-    this.logEl.innerHTML = this.logEntries
-      .map((entry) => `<div class="log-entry">${entry}</div>`)
-      .join("");
-
-    this.logEl.scrollTop = this.logEl.scrollHeight;
   }
 
   stopRaceLoop() {
@@ -266,3 +267,4 @@ export class RaceScreen {
     this.intervalId = null;
   }
 }
+

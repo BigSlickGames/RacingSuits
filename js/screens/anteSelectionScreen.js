@@ -1,21 +1,27 @@
 export class AnteSelectionScreen {
   constructor({
     screenEl,
-    buttonGroupEl,
+    sliderEl,
+    minLabelEl,
+    maxLabelEl,
     valueEl,
     chipsEl,
     backButton,
     confirmButton
   }) {
     this.screenEl = screenEl;
-    this.buttonGroupEl = buttonGroupEl ?? this.ensureButtonGroupElement(screenEl);
+    this.sliderEl = sliderEl;
+    this.minLabelEl = minLabelEl;
+    this.maxLabelEl = maxLabelEl;
     this.valueEl = valueEl;
     this.chipsEl = chipsEl;
     this.backButton = backButton;
     this.confirmButton = confirmButton;
+
     this.currentAnte = null;
     this.currentChips = 0;
     this.anteOptions = [];
+    this.availableAntes = [];
 
     this.handlers = {
       onBack: () => {},
@@ -23,17 +29,9 @@ export class AnteSelectionScreen {
       onAnteLocked: () => {}
     };
 
-    if (this.buttonGroupEl) {
-      this.buttonGroupEl.addEventListener("click", (event) => {
-        const optionButton = event.target.closest("[data-ante-value]");
-        if (!optionButton || optionButton.disabled) {
-          return;
-        }
-
-        const nextAnte = Number(optionButton.dataset.anteValue);
-        this.setCurrentAnte(nextAnte, true);
-      });
-    }
+    this.sliderEl.addEventListener("input", () => {
+      this.setAnteBySliderIndex(Number(this.sliderEl.value), true);
+    });
 
     this.backButton.addEventListener("click", () => {
       this.handlers.onBack();
@@ -51,42 +49,17 @@ export class AnteSelectionScreen {
     this.handlers = { ...this.handlers, ...handlers };
   }
 
-  ensureButtonGroupElement(screenEl) {
-    const existing = screenEl.querySelector("#ante-button-group");
-    if (existing) {
-      return existing;
-    }
-
-    const antePanel = screenEl.querySelector(".ante-panel");
-    if (!antePanel) {
-      return null;
-    }
-
-    const created = document.createElement("div");
-    created.id = "ante-button-group";
-    created.className = "ante-button-group";
-    created.setAttribute("role", "group");
-    created.setAttribute("aria-label", "Ante options");
-
-    const anteValue = antePanel.querySelector(".ante-value");
-    if (anteValue) {
-      antePanel.insertBefore(created, anteValue);
-    } else {
-      antePanel.appendChild(created);
-    }
-
-    return created;
-  }
-
   show({ chips, ante, anteOptions }) {
     this.currentChips = chips;
     this.anteOptions = anteOptions;
     this.chipsEl.textContent = String(chips);
+
+    this.availableAntes = this.getEnabledAnteOptions();
     this.currentAnte = this.resolveAnte(ante);
-    this.renderButtons();
+
+    this.renderSlider();
     this.refreshAnteValue();
     this.confirmButton.disabled = this.currentAnte === null;
-
     this.screenEl.classList.add("active");
   }
 
@@ -94,8 +67,12 @@ export class AnteSelectionScreen {
     this.screenEl.classList.remove("active");
   }
 
+  getEnabledAnteOptions() {
+    return this.anteOptions.filter((option) => option <= this.currentChips);
+  }
+
   resolveAnte(requestedAnte) {
-    const available = this.getEnabledAnteOptions();
+    const available = this.availableAntes;
     if (available.length === 0) {
       return null;
     }
@@ -112,41 +89,45 @@ export class AnteSelectionScreen {
     return available[0];
   }
 
-  getEnabledAnteOptions() {
-    return this.anteOptions.filter((option) => option <= this.currentChips);
-  }
-
-  renderButtons() {
-    if (!this.buttonGroupEl) {
+  renderSlider() {
+    if (this.availableAntes.length === 0) {
+      this.sliderEl.disabled = true;
+      this.sliderEl.min = "0";
+      this.sliderEl.max = "0";
+      this.sliderEl.step = "1";
+      this.sliderEl.value = "0";
+      this.minLabelEl.textContent = "-";
+      this.maxLabelEl.textContent = "-";
       return;
     }
 
-    const buttonMarkup = this.anteOptions.map((option) => {
-      const isDisabled = option > this.currentChips;
-      const isSelected = option === this.currentAnte;
-      return `
-        <button
-          type="button"
-          class="ante-option-btn${isSelected ? " selected" : ""}"
-          data-ante-value="${option}"
-          ${isDisabled ? "disabled" : ""}
-          aria-pressed="${isSelected ? "true" : "false"}"
-        >
-          ${option}
-        </button>
-      `;
-    }).join("");
+    const selectedIndex = Math.max(0, this.availableAntes.indexOf(this.currentAnte));
 
-    this.buttonGroupEl.innerHTML = buttonMarkup;
+    this.sliderEl.disabled = false;
+    this.sliderEl.min = "0";
+    this.sliderEl.max = String(this.availableAntes.length - 1);
+    this.sliderEl.step = "1";
+    this.sliderEl.value = String(selectedIndex);
+
+    this.minLabelEl.textContent = String(this.availableAntes[0]);
+    this.maxLabelEl.textContent = String(this.availableAntes[this.availableAntes.length - 1]);
   }
 
   refreshAnteValue() {
     this.valueEl.textContent = this.currentAnte === null ? "-" : String(this.currentAnte);
   }
 
-  setCurrentAnte(nextAnte, notifyChange) {
-    this.currentAnte = this.resolveAnte(nextAnte);
-    this.renderButtons();
+  setAnteBySliderIndex(index, notifyChange) {
+    if (this.availableAntes.length === 0) {
+      this.currentAnte = null;
+      this.confirmButton.disabled = true;
+      this.refreshAnteValue();
+      return;
+    }
+
+    const clampedIndex = Math.max(0, Math.min(index, this.availableAntes.length - 1));
+    this.currentAnte = this.availableAntes[clampedIndex];
+    this.sliderEl.value = String(clampedIndex);
     this.refreshAnteValue();
     this.confirmButton.disabled = this.currentAnte === null;
 
@@ -155,3 +136,4 @@ export class AnteSelectionScreen {
     }
   }
 }
+

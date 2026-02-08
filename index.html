@@ -7,9 +7,6 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="festival-glow glow-a" aria-hidden="true"></div>
-  <div class="festival-glow glow-b" aria-hidden="true"></div>
-
   <main id="app" class="app-shell loading">
     <header class="app-header" aria-label="Player panel">
       <div class="player-meta">
@@ -22,14 +19,7 @@
           <span class="stat-label">Chips</span>
           <span id="chip-count" class="stat-value">200</span>
         </div>
-        <div class="stat-pill">
-          <span class="stat-label">Wins</span>
-          <span id="stat-wins" class="stat-value stat-soon">Soon</span>
-        </div>
-        <div class="stat-pill">
-          <span class="stat-label">Streak</span>
-          <span id="stat-streak" class="stat-value stat-soon">Soon</span>
-        </div>
+        <button id="open-menu-btn" class="menu-btn" type="button">Menu</button>
       </div>
     </header>
 
@@ -42,22 +32,108 @@
       >
     </section>
 
-    <section id="screen-suit" class="screen" aria-labelledby="suit-title">
-      <h2 id="suit-title">Choose Your Suit</h2>
+    <section id="screen-suit" class="screen selection-screen" aria-labelledby="suit-title">
+      <h2 id="suit-title">Choose Your Racer</h2>
       <div id="suit-options" class="suit-options"></div>
-      <button id="suit-confirm-btn" class="action-btn" disabled>Continue to Ante</button>
+      <button id="suit-confirm-btn" class="action-btn" disabled>Continue To Ante</button>
     </section>
 
-    <section id="screen-ante" class="screen" aria-labelledby="ante-title">
-      <h2 id="ante-title">Set Your Ante</h2>
+    <section id="screen-ante" class="screen ante-screen" aria-labelledby="ante-title">
+      <h2 id="ante-title">Choose Your Ante</h2>
       <div class="ante-panel">
         <div class="ante-summary">Available chips: <strong id="available-chip-count">200</strong></div>
-        <div id="ante-button-group" class="ante-button-group" role="group" aria-label="Ante options"></div>
+        <div class="ante-slider-wrap">
+          <input
+            id="ante-slider"
+            class="ante-slider"
+            type="range"
+            min="0"
+            max="0"
+            value="0"
+            step="1"
+            aria-label="Ante amount"
+          >
+        </div>
+        <div class="ante-slider-labels" aria-hidden="true">
+          <span id="ante-min-label">5</span>
+          <span id="ante-max-label">200</span>
+        </div>
         <div class="ante-value">Ante: <span id="ante-value">5</span></div>
       </div>
       <div class="screen-actions">
-        <button id="ante-back-btn" class="ghost-btn">Back</button>
-        <button id="ante-confirm-btn" class="action-btn">Head To The Track</button>
+        <button id="ante-back-btn" class="ghost-btn" type="button">Back</button>
+        <button id="ante-confirm-btn" class="action-btn" type="button">Start Racing</button>
+      </div>
+    </section>
+
+    <section id="screen-menu" class="screen menu-screen" aria-labelledby="menu-title">
+      <h2 id="menu-title">Menu</h2>
+      <div class="menu-panel">
+        <button id="menu-stats-btn" class="action-btn" type="button">Player Stats</button>
+        <button id="menu-back-btn" class="ghost-btn" type="button">Back To Selection</button>
+      </div>
+    </section>
+
+    <section id="screen-stats" class="screen stats-screen" aria-labelledby="stats-title">
+      <h2 id="stats-title">Player Stats</h2>
+      <div class="stats-panel stats-summary-panel">
+        <div class="stats-row">
+          <span>Total Wins</span>
+          <strong id="stats-wins-value">0</strong>
+        </div>
+        <div class="stats-row">
+          <span>Current Streak</span>
+          <strong id="stats-streak-value">0</strong>
+        </div>
+        <div class="stats-row">
+          <span>Games Played</span>
+          <strong id="stats-games-value">0</strong>
+        </div>
+        <div class="stats-row">
+          <span>Net Chips</span>
+          <strong id="stats-netchips-value">0</strong>
+        </div>
+      </div>
+      <div class="stats-leaderboards">
+        <section class="stats-board" aria-labelledby="wins-board-title">
+          <h3 id="wins-board-title">Wins / Streak Leaderboard</h3>
+          <div class="stats-table-wrap">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Racer</th>
+                  <th>Wins</th>
+                  <th>Best</th>
+                </tr>
+              </thead>
+              <tbody id="wins-leaderboard-body"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="stats-board" aria-labelledby="chips-board-title">
+          <h3 id="chips-board-title">Chip % Leaderboard</h3>
+          <div class="stats-table-wrap">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Racer</th>
+                  <th>Chips</th>
+                  <th>Games</th>
+                  <th>Best</th>
+                  <th>Win%</th>
+                  <th>ROI%</th>
+                </tr>
+              </thead>
+              <tbody id="chips-leaderboard-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+      <div class="menu-panel">
+        <button id="stats-menu-btn" class="ghost-btn" type="button">Back To Menu</button>
+        <button id="stats-selection-btn" class="action-btn" type="button">Back To Selection</button>
       </div>
     </section>
 
@@ -68,7 +144,12 @@
       <div class="race-layout">
         <div class="track-board">
           <div class="track-viewport">
-            <div id="race-grid" class="race-grid"></div>
+            <div class="track-inner">
+              <div id="race-grid" class="race-grid"></div>
+              <aside class="race-sidebar" aria-label="Current race standings">
+                <div id="race-rankings" class="race-rankings"></div>
+              </aside>
+            </div>
           </div>
         </div>
       </div>
@@ -76,17 +157,22 @@
       <div class="race-controls">
         <div class="draw-area">
           <span>Current Flip</span>
-          <div id="current-draw-card" class="draw-card face-down">?</div>
+          <div id="current-draw-card" class="draw-card face-down"></div>
         </div>
         <button id="start-race-btn" class="action-btn">Start Race!</button>
       </div>
-
-      <div id="race-log" class="race-log" aria-live="polite"></div>
     </section>
 
     <section id="screen-result" class="screen" aria-labelledby="result-title">
       <h2 id="result-title">Finish Line Frenzy!</h2>
       <div id="result-banner" class="result-banner"></div>
+      <div class="result-showcase">
+        <div id="result-confetti" class="result-confetti" aria-hidden="true"></div>
+        <div class="winner-medal">
+          <span class="result-trophy" aria-hidden="true">&#127942;</span>
+          <img id="result-winner-image" class="result-winner-image" src="" alt="">
+        </div>
+      </div>
       <p id="result-copy" class="result-copy"></p>
       <button id="race-again-btn" class="action-btn">Race Again??</button>
     </section>
@@ -95,3 +181,5 @@
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>
+
+
