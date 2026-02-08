@@ -20,8 +20,6 @@ const settingsState = {
 const appShellEl = document.getElementById("app");
 const appHeaderEl = document.querySelector(".app-header");
 const chipCountEl = document.getElementById("chip-count");
-const profileWinsEl = document.getElementById("profile-wins");
-const profileStreakEl = document.getElementById("profile-streak");
 const bannerScreenEl = document.getElementById("screen-banner");
 const floatingNavEl = document.getElementById("floating-nav");
 const floatingMenuButton = document.getElementById("floating-menu-btn");
@@ -143,8 +141,6 @@ function formatSigned(value) {
 
 function updateChipDisplay() {
   chipCountEl.textContent = String(gameState.chips);
-  profileWinsEl.textContent = String(gameState.wins);
-  profileStreakEl.textContent = String(gameState.currentStreak);
 }
 
 function updateLeaderboardDisplay() {
