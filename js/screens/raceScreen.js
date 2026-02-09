@@ -2,6 +2,7 @@ import { AnimationManager } from "../animation/animationManager.js";
 import { SUITS, getSuitById } from "../data/suits.js";
 
 const RACE_TICK_MS = 820;
+const START_SEQUENCE_STEP_MS = 620;
 
 const LANE_TONES = Object.freeze({
   hearts: {
@@ -49,18 +50,16 @@ function markerTransform(anchor) {
 export class RaceScreen {
   constructor({
     screenEl,
-    summaryEl,
     gridEl,
     leaderboardEl,
     drawCardEl,
-    startButton
+    startSequenceEl
   }) {
     this.screenEl = screenEl;
-    this.summaryEl = summaryEl;
     this.gridEl = gridEl;
     this.leaderboardEl = leaderboardEl;
     this.drawCardEl = drawCardEl;
-    this.startButton = startButton;
+    this.startSequenceEl = startSequenceEl;
 
     this.animationManager = new AnimationManager();
 
@@ -71,6 +70,7 @@ export class RaceScreen {
     this.replay = null;
     this.playbackTimerId = null;
     this.playbackCursor = 0;
+    this.startSequenceTimers = [];
 
     this.laneCells = new Map();
     this.markerNodes = new Map();
@@ -82,10 +82,6 @@ export class RaceScreen {
     this.handlers = {
       onRaceFinished: () => {}
     };
-
-    this.startButton.addEventListener("click", () => {
-      this.startRace();
-    });
 
     window.addEventListener("resize", () => {
       this.recalculateAnchors();
@@ -103,17 +99,22 @@ export class RaceScreen {
     this.trackLength = raceResult.config.trackLength;
     this.replay = replay;
     this.instantResolveEnabled = Boolean(instantResolveEnabled);
+    this.screenEl.classList.add("active");
 
-    this.renderSummary(raceResult.seed);
     this.buildGrid(raceResult.frames[0]);
     this.ensureLeaderboardNodes();
     this.applyFrame(raceResult.frames[0], false);
     this.setDrawCard(null);
 
-    this.startButton.disabled = false;
-    this.startButton.textContent = "Start Race!";
     this.playbackCursor = 0;
-    this.screenEl.classList.add("active");
+
+    window.requestAnimationFrame(() => {
+      this.recalculateAnchors();
+      if (this.currentFrame) {
+        this.updateMarkerPositions(this.currentFrame.positions, false);
+      }
+      this.startRaceSequence();
+    });
   }
 
   hide() {
@@ -121,17 +122,13 @@ export class RaceScreen {
     this.screenEl.classList.remove("active");
   }
 
-  renderSummary(seed) {
-    const playerSuit = getSuitById(this.playerSuitId);
-    this.summaryEl.innerHTML = `
-      Backing <strong>${playerSuit.name}</strong>
-      | Ante <strong>${this.ante} chips</strong>
-      | Track <strong>${this.trackLength} lengths</strong>
-      | Seed <strong>${seed}</strong>
-    `;
-  }
-
   buildGrid(initialFrame) {
+    const trackBoardEl = this.gridEl.closest(".track-board");
+    if (trackBoardEl) {
+      trackBoardEl.style.setProperty("--track-rows", String(this.trackLength + 1));
+      trackBoardEl.style.setProperty("--track-cols", String(SUITS.length));
+    }
+
     const rowMarkup = [];
 
     for (let length = this.trackLength; length >= 0; length -= 1) {
@@ -156,7 +153,7 @@ export class RaceScreen {
 
       let sideCardMarkup = "";
       if (isStart || isFinish) {
-        sideCardMarkup = `<div class="track-cell side-card-cell no-card" aria-hidden="true">-</div>`;
+        sideCardMarkup = `<div class="track-cell side-card-cell no-card" aria-hidden="true"></div>`;
       } else {
         sideCardMarkup = `
           <div class="track-cell side-card-cell face-down" data-checkpoint-length="${length}" title="Length ${length} checkpoint">?</div>
@@ -230,6 +227,7 @@ export class RaceScreen {
       return;
     }
 
+    const gridRect = this.gridEl.getBoundingClientRect();
     this.markerAnchors.clear();
 
     SUITS.forEach((suit) => {
@@ -240,9 +238,10 @@ export class RaceScreen {
           continue;
         }
 
+        const laneRect = laneCell.getBoundingClientRect();
         laneAnchorMap.set(length, {
-          x: laneCell.offsetLeft + (laneCell.offsetWidth / 2),
-          y: laneCell.offsetTop + (laneCell.offsetHeight / 2)
+          x: (laneRect.left - gridRect.left) + (laneRect.width / 2),
+          y: (laneRect.top - gridRect.top) + (laneRect.height / 2)
         });
       }
       this.markerAnchors.set(suit.id, laneAnchorMap);
@@ -301,10 +300,17 @@ export class RaceScreen {
   updateMarkerPositions(positions, animate) {
     SUITS.forEach((suit) => {
       const markerNode = this.markerNodes.get(suit.id);
-      const anchor = this.markerAnchors.get(suit.id)?.get(positions[suit.id]);
+      const rawLength = Number(positions[suit.id]);
+      const laneLength = Number.isFinite(rawLength)
+        ? Math.min(this.trackLength, Math.max(0, rawLength))
+        : 0;
+      const suitAnchors = this.markerAnchors.get(suit.id);
+      const anchor = suitAnchors?.get(laneLength) ?? suitAnchors?.get(0);
       if (!markerNode || !anchor) {
         return;
       }
+
+      markerNode.classList.toggle("at-start", laneLength === 0);
 
       const nextTransform = markerTransform(anchor);
       if (animate) {
@@ -387,8 +393,7 @@ export class RaceScreen {
       return;
     }
 
-    this.startButton.disabled = true;
-    this.startButton.textContent = this.instantResolveEnabled ? "Resolving..." : "Racing...";
+    this.clearStartSequence();
 
     if (this.instantResolveEnabled) {
       this.resolveRaceInstantly();
@@ -446,8 +451,6 @@ export class RaceScreen {
 
   finishRace(turnEvent, delayMs) {
     this.stopRaceLoop();
-    this.startButton.textContent = "Race Complete";
-    this.startButton.disabled = true;
 
     window.setTimeout(() => {
       this.handlers.onRaceFinished({
@@ -460,12 +463,59 @@ export class RaceScreen {
   }
 
   stopRaceLoop() {
-    if (!this.playbackTimerId) {
+    if (this.playbackTimerId) {
+      clearTimeout(this.playbackTimerId);
+      this.playbackTimerId = null;
+    }
+    this.clearStartSequence();
+  }
+
+  startRaceSequence() {
+    this.clearStartSequence();
+
+    if (!this.replay) {
       return;
     }
 
-    clearTimeout(this.playbackTimerId);
-    this.playbackTimerId = null;
+    if (!this.startSequenceEl) {
+      this.startRace();
+      return;
+    }
+
+    this.startSequenceEl.classList.add("active");
+    this.startSequenceEl.dataset.phase = "red";
+
+    const orangeTimerId = window.setTimeout(() => {
+      if (this.startSequenceEl) {
+        this.startSequenceEl.dataset.phase = "orange";
+      }
+    }, START_SEQUENCE_STEP_MS);
+
+    const greenTimerId = window.setTimeout(() => {
+      if (this.startSequenceEl) {
+        this.startSequenceEl.dataset.phase = "green";
+      }
+    }, START_SEQUENCE_STEP_MS * 2);
+
+    const goTimerId = window.setTimeout(() => {
+      this.startRace();
+    }, START_SEQUENCE_STEP_MS * 3);
+
+    this.startSequenceTimers.push(orangeTimerId, greenTimerId, goTimerId);
+  }
+
+  clearStartSequence() {
+    this.startSequenceTimers.forEach((timerId) => {
+      clearTimeout(timerId);
+    });
+    this.startSequenceTimers = [];
+
+    if (!this.startSequenceEl) {
+      return;
+    }
+
+    this.startSequenceEl.classList.remove("active");
+    this.startSequenceEl.dataset.phase = "idle";
   }
 }
 

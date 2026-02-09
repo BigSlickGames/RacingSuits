@@ -169,15 +169,21 @@
 
     <section id="screen-race" class="screen race-screen" aria-labelledby="race-title">
       <h2 id="race-title" class="sr-only">Suit Race</h2>
-      <div id="race-summary" class="race-summary sr-only" aria-live="polite"></div>
       <div class="race-layout">
         <div class="track-board">
+          <div id="race-start-sequence" class="race-start-sequence" aria-live="polite" aria-atomic="true">
+            <div class="start-lights">
+              <span class="start-light red"></span>
+              <span class="start-light orange"></span>
+              <span class="start-light green"></span>
+            </div>
+            <p class="start-go">GO!!!!</p>
+          </div>
           <div class="track-viewport">
             <div id="race-grid" class="race-grid"></div>
           </div>
-          <button id="start-race-btn" class="action-btn race-start-btn">Start Race!</button>
         </div>
-        <aside class="race-sidebar" aria-label="Current race standings">
+        <aside class="race-sidebar" aria-label="Race details">
           <div id="race-rankings" class="race-rankings"></div>
           <div class="draw-area" aria-label="Current race card">
             <div id="current-draw-card" class="draw-card face-down"></div>
@@ -188,15 +194,16 @@
 
     <section id="screen-result" class="screen result-screen" aria-labelledby="result-title">
       <h2 id="result-title" class="sr-only">Finish Line Frenzy!</h2>
-      <div id="result-banner" class="result-banner sr-only"></div>
-      <div class="result-showcase">
+      <div id="result-banner" class="result-banner"></div>
+      <div id="result-showcase" class="result-showcase">
+        <div id="result-crowd" class="result-crowd" aria-hidden="true"></div>
         <div id="result-confetti" class="result-confetti" aria-hidden="true"></div>
         <div class="winner-medal">
           <span class="result-trophy" aria-hidden="true">&#127942;</span>
           <img id="result-winner-image" class="result-winner-image" src="" alt="">
         </div>
       </div>
-      <p id="result-copy" class="result-copy sr-only"></p>
+      <p id="result-copy" class="result-copy"></p>
       <button id="race-again-btn" class="action-btn">Race Again</button>
     </section>
 

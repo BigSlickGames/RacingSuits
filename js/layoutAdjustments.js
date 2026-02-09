@@ -1,7 +1,9 @@
+import { LAYOUT_ADJUSTMENTS_CONFIG } from "./layoutAdjustments.config.js";
+
 /*
   Racing Suits Layout Adjustments
 
-  Edit LAYOUT_ADJUSTMENTS to tune each screen and element.
+  Edit values in js/layoutAdjustments.config.js to tune each screen and element.
 
   Supported properties per selector:
   - x, y: translate offset (number => px, string => CSS value)
@@ -160,7 +162,6 @@ const SCREEN_TARGETS = {
   "screen-race": [
     ":screen",
     "#race-title",
-    "#race-summary",
     ".race-layout",
     ".track-board",
     ".track-viewport",
@@ -184,14 +185,19 @@ const SCREEN_TARGETS = {
     ".draw-card",
     ".draw-card-image",
     ".draw-card-back",
-    "#start-race-btn"
+    ".race-start-sequence",
+    ".start-lights",
+    ".start-light",
+    ".start-go"
   ],
 
   "screen-result": [
     ":screen",
     "#result-title",
     "#result-banner",
+    "#result-showcase",
     ".result-showcase",
+    "#result-crowd",
     "#result-confetti",
     ".winner-medal",
     ".result-trophy",
@@ -221,6 +227,8 @@ export const DEFAULT_ADJUSTMENT_VALUES = Object.freeze({
   origin: ""
 });
 
+const ADJUSTMENT_KEYS = Object.keys(DEFAULT_ADJUSTMENT_VALUES);
+
 function createDefaultAdjustment() {
   return { ...DEFAULT_ADJUSTMENT_VALUES };
 }
@@ -242,6 +250,32 @@ function createDefaultLayoutAdjustments() {
 }
 
 export const LAYOUT_ADJUSTMENTS = createDefaultLayoutAdjustments();
+
+function applyConfiguredAdjustments(targetAdjustments, configuredAdjustments) {
+  if (!configuredAdjustments || typeof configuredAdjustments !== "object") {
+    return;
+  }
+
+  Object.entries(configuredAdjustments).forEach(([screenId, selectors]) => {
+    if (!targetAdjustments[screenId] || !selectors || typeof selectors !== "object") {
+      return;
+    }
+
+    Object.entries(selectors).forEach(([selector, adjustment]) => {
+      if (!targetAdjustments[screenId][selector] || !adjustment || typeof adjustment !== "object") {
+        return;
+      }
+
+      ADJUSTMENT_KEYS.forEach((key) => {
+        if (hasOwn(adjustment, key)) {
+          targetAdjustments[screenId][selector][key] = adjustment[key];
+        }
+      });
+    });
+  });
+}
+
+applyConfiguredAdjustments(LAYOUT_ADJUSTMENTS, LAYOUT_ADJUSTMENTS_CONFIG);
 
 const HAS_INDIVIDUAL_TRANSFORM = "translate" in document.documentElement.style;
 
@@ -412,6 +446,7 @@ export function resetLayoutAdjustmentsToDefaults() {
   });
 
   Object.assign(LAYOUT_ADJUSTMENTS, defaultConfig);
+  applyConfiguredAdjustments(LAYOUT_ADJUSTMENTS, LAYOUT_ADJUSTMENTS_CONFIG);
   applyLayoutAdjustments();
 }
 
@@ -434,6 +469,7 @@ function printLayoutHelp() {
   console.log("Properties:", ADJUSTMENT_PROPS_HELP);
   console.log("Default values:", DEFAULT_ADJUSTMENT_VALUES);
   console.log("Targets by screen:", SCREEN_TARGETS);
+  console.log("Configured values source:", "js/layoutAdjustments.config.js");
   console.log("Current editable object:", LAYOUT_ADJUSTMENTS);
   console.log("Reset command: window.resetRacingSuitsLayoutAdjustments()");
   console.groupEnd();

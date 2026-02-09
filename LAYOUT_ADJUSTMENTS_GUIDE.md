@@ -1,6 +1,7 @@
 # Layout Adjustments: Screen-by-Screen (Beginner)
 
-Edit `LAYOUT_ADJUSTMENTS` in `js/layoutAdjustments.js`.
+This file is a reference guide only.
+Edit `LAYOUT_ADJUSTMENTS_CONFIG` in `js/layoutAdjustments.config.js`.
 Numbers are treated as `px`. Use strings for units like `%`, `vw`, `vh`, or `rem`.
 
 Property meanings (simple):
@@ -2022,7 +2023,7 @@ Default reset values are shown under every element below.
 - Selector: `.track-cell.lane-cell`
 - `x`: `0`
 - `y`: `0`
-- `padding`: `""`
+- `padding`: `".2"`
 - `paddingX`: `""`
 - `paddingY`: `""`
 - `paddingTop`: `""`
@@ -2032,7 +2033,7 @@ Default reset values are shown under every element below.
 - `scale`: `1`
 - `scaleX`: `""`
 - `scaleY`: `""`
-- `sizeX`: `""`
+- `sizeX`: `"2"`
 - `sizeY`: `""`
 - `positionX`: `""`
 - `positionY`: `""`

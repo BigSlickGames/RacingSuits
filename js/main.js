@@ -96,16 +96,17 @@ const anteSelectionScreen = new AnteSelectionScreen({
 
 const raceScreen = new RaceScreen({
   screenEl: document.getElementById("screen-race"),
-  summaryEl: document.getElementById("race-summary"),
   gridEl: document.getElementById("race-grid"),
   leaderboardEl: document.getElementById("race-rankings"),
   drawCardEl: document.getElementById("current-draw-card"),
-  startButton: document.getElementById("start-race-btn")
+  startSequenceEl: document.getElementById("race-start-sequence")
 });
 
 const resultsScreen = new ResultsScreen({
   screenEl: document.getElementById("screen-result"),
   bannerEl: document.getElementById("result-banner"),
+  showcaseEl: document.getElementById("result-showcase"),
+  crowdEl: document.getElementById("result-crowd"),
   winnerImageEl: document.getElementById("result-winner-image"),
   confettiEl: document.getElementById("result-confetti"),
   copyEl: document.getElementById("result-copy"),
@@ -210,6 +211,7 @@ function playScreenTransition() {
 function setCurrentScreen(screenKey) {
   const hasChanged = currentScreenKey !== screenKey;
   currentScreenKey = screenKey;
+  appShellEl.classList.toggle("race-mode", screenKey === "race");
   if (hasChanged) {
     playScreenTransition();
   }
@@ -332,7 +334,7 @@ function showRaceScreen() {
   setCurrentScreen("race");
 }
 
-function showResultScreen({ winnerSuitId, turnCount, settlement, seed }) {
+function showResultScreen({ winnerSuitId, turnCount, settlement, seed, replay }) {
   hideAllScreens();
   setLoadingMode(false);
   setSelectionHeaderVisible(false);
@@ -345,7 +347,8 @@ function showResultScreen({ winnerSuitId, turnCount, settlement, seed }) {
     turnCount,
     settlement,
     startingChips: GAME_CONSTANTS.STARTING_CHIPS,
-    seed
+    seed,
+    replay
   });
 
   setCurrentScreen("result");
@@ -475,7 +478,7 @@ anteSelectionScreen.init({
 });
 
 raceScreen.init({
-  onRaceFinished: ({ winnerSuitId, turnCount, seed }) => {
+  onRaceFinished: ({ winnerSuitId, turnCount, seed, replay }) => {
     const settlement = gameState.settleRace(winnerSuitId);
     const activeSession = gameState.getActiveRaceSession();
     updateChipDisplay();
@@ -484,7 +487,8 @@ raceScreen.init({
       winnerSuitId,
       turnCount,
       settlement,
-      seed: seed ?? activeSession?.seed
+      seed: seed ?? activeSession?.seed,
+      replay: replay ?? activeSession?.replay
     });
   }
 });
