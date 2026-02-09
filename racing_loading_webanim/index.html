@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Racing Suits - Loading</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="fx"></canvas>
+
+  <!-- Optional overlay text / progress -->
+  <div id="hud" aria-hidden="true">
+    <div class="badge">LOADING</div>
+    <div class="sub">Get ready…</div>
+  </div>
+
+  <script src="main.js"></script>
+  <script>
+    // ✅ Configure your handoff here:
+    // 1) If your game is a URL, set redirectUrl.
+    // 2) If you boot your game via JS, define window.startGame = () => {...}.
+    window.RACING_LOADING_CONFIG = {
+      durationMs: 6800,                // total animation length (plays once)
+      fadeOutMs: 650,                  // fade to black at end
+      redirectUrl: null,               // e.g. "game.html" or "https://yourgame.com/play"
+      // If redirectUrl is null and window.startGame exists, it will call startGame().
+      // If neither exists, it will dispatch a DOM event: "loadingComplete".
+    };
+  </script>
+</body>
+</html>

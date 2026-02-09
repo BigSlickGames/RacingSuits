@@ -319,7 +319,7 @@ function showRaceScreen() {
   hideAllScreens();
   setLoadingMode(false);
   setSelectionHeaderVisible(false);
-  setFloatingMenuVisible(true);
+  setFloatingMenuVisible(false);
 
   raceScreen.show({
     playerSuitId: gameState.selectedSuitId,
@@ -425,6 +425,7 @@ async function runInitialLoadScreen() {
   const screenStart = Date.now();
   const preloadResults = await preloadImages([
     "./assets/racing_suits_banner.png",
+    "./assets/race-screen-bg.png",
     ...SUITS.map((suit) => suit.racerImage)
   ]);
 

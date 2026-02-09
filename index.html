@@ -41,10 +41,7 @@
     </section>
 
     <section id="screen-ante" class="screen ante-screen" aria-labelledby="ante-title">
-      <h2 id="ante-title">Choose Your Ante</h2>
-      <div class="ante-racer-stage" aria-label="Selected racer">
-        <img id="ante-racer-image" class="ante-racer-image" src="" alt="">
-      </div>
+      <h2 id="ante-title" class="sr-only">Choose Your Ante</h2>
       <div class="ante-panel">
         <div class="ante-summary">Available chips: <strong id="available-chip-count">200</strong></div>
         <div class="ante-slider-wrap">
@@ -65,9 +62,12 @@
         </div>
         <div class="ante-value">Ante: <span id="ante-value">5</span></div>
       </div>
-      <div class="screen-actions">
-        <button id="ante-back-btn" class="ghost-btn" type="button">Back</button>
-        <button id="ante-confirm-btn" class="action-btn" type="button">Start Racing</button>
+      <div class="ante-racer-stage" aria-label="Selected racer">
+        <img id="ante-racer-image" class="ante-racer-image" src="" alt="">
+      </div>
+      <div class="screen-actions ante-actions">
+        <button id="ante-back-btn" class="ghost-btn ante-back-btn" type="button">Back</button>
+        <button id="ante-confirm-btn" class="action-btn ante-confirm-btn" type="button">Continue To Race</button>
       </div>
     </section>
 
@@ -167,34 +167,28 @@
       </div>
     </section>
 
-    <section id="screen-race" class="screen" aria-labelledby="race-title">
-      <h2 id="race-title">Suit Race</h2>
-      <div id="race-summary" class="race-summary"></div>
-
+    <section id="screen-race" class="screen race-screen" aria-labelledby="race-title">
+      <h2 id="race-title" class="sr-only">Suit Race</h2>
+      <div id="race-summary" class="race-summary sr-only" aria-live="polite"></div>
       <div class="race-layout">
         <div class="track-board">
           <div class="track-viewport">
-            <div class="track-inner">
-              <div id="race-grid" class="race-grid"></div>
-              <div class="track-controls-panel">
-                <div class="draw-area">
-                  <span>Current Flip</span>
-                  <div id="current-draw-card" class="draw-card face-down"></div>
-                </div>
-                <button id="start-race-btn" class="action-btn">Start Race!</button>
-              </div>
-              <aside class="race-sidebar" aria-label="Current race standings">
-                <div id="race-rankings" class="race-rankings"></div>
-              </aside>
-            </div>
+            <div id="race-grid" class="race-grid"></div>
           </div>
+          <button id="start-race-btn" class="action-btn race-start-btn">Start Race!</button>
         </div>
+        <aside class="race-sidebar" aria-label="Current race standings">
+          <div id="race-rankings" class="race-rankings"></div>
+          <div class="draw-area" aria-label="Current race card">
+            <div id="current-draw-card" class="draw-card face-down"></div>
+          </div>
+        </aside>
       </div>
     </section>
 
-    <section id="screen-result" class="screen" aria-labelledby="result-title">
-      <h2 id="result-title">Finish Line Frenzy!</h2>
-      <div id="result-banner" class="result-banner"></div>
+    <section id="screen-result" class="screen result-screen" aria-labelledby="result-title">
+      <h2 id="result-title" class="sr-only">Finish Line Frenzy!</h2>
+      <div id="result-banner" class="result-banner sr-only"></div>
       <div class="result-showcase">
         <div id="result-confetti" class="result-confetti" aria-hidden="true"></div>
         <div class="winner-medal">
@@ -202,8 +196,8 @@
           <img id="result-winner-image" class="result-winner-image" src="" alt="">
         </div>
       </div>
-      <p id="result-copy" class="result-copy"></p>
-      <button id="race-again-btn" class="action-btn">Race Again??</button>
+      <p id="result-copy" class="result-copy sr-only"></p>
+      <button id="race-again-btn" class="action-btn">Race Again</button>
     </section>
 
     <div id="floating-nav" class="floating-nav" aria-label="Quick navigation">
@@ -212,6 +206,7 @@
     <div id="screen-transition-streak" class="screen-transition-streak" aria-hidden="true"></div>
   </main>
 
+  <script type="module" src="./js/layoutAdjustments.js"></script>
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>

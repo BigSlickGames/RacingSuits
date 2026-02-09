@@ -5,19 +5,19 @@ const RACE_TICK_MS = 820;
 
 const LANE_TONES = Object.freeze({
   hearts: {
-    dark: "rgb(126 0 0)",
+    dark: "rgba(255, 70, 70, 0.08)",
     lit: "rgb(255 22 22)"
   },
   clubs: {
-    dark: "rgb(20 45 160)",
+    dark: "rgba(72, 114, 255, 0.08)",
     lit: "rgb(20 57 255)"
   },
   diamonds: {
-    dark: "rgb(0 92 10)",
+    dark: "rgba(79, 240, 120, 0.08)",
     lit: "rgb(122 245 122)"
   },
   spades: {
-    dark: "rgb(8 12 22)",
+    dark: "rgba(255, 255, 255, 0.08)",
     lit: "rgb(234 234 234)"
   }
 });
@@ -30,19 +30,6 @@ const SUIT_ORDER = SUITS.reduce((accumulator, suit, index) => {
 function getLaneToneColor(suitId, isLit) {
   const tone = LANE_TONES[suitId] ?? { dark: "rgb(38 38 46)", lit: "rgb(168 168 180)" };
   return isLit ? tone.lit : tone.dark;
-}
-
-function getRankLabel(rank) {
-  if (rank === 1) {
-    return "\uD83E\uDD47";
-  }
-  if (rank === 2) {
-    return "\uD83E\uDD48";
-  }
-  if (rank === 3) {
-    return "\uD83E\uDD49";
-  }
-  return `#${rank}`;
 }
 
 function getOrderedSuitsByPosition(positions) {
@@ -335,16 +322,13 @@ export class RaceScreen {
     const orderedNodes = [];
 
     orderedSuits.forEach((suit, index) => {
-      const rank = index + 1;
       const entry = this.leaderboardNodes.get(suit.id);
       if (!entry) {
         return;
       }
 
-      entry.root.classList.toggle("leader", rank === 1);
+      entry.root.classList.toggle("leader", index === 0);
       entry.root.classList.toggle("player", suit.id === this.playerSuitId);
-      entry.rank.textContent = getRankLabel(rank);
-      entry.distance.textContent = `L${positions[suit.id]}`;
       orderedNodes.push(entry.root);
     });
 
@@ -368,30 +352,18 @@ export class RaceScreen {
 
     SUITS.forEach((suit) => {
       const rootNode = document.createElement("div");
-      rootNode.className = "leaderboard-entry";
+      rootNode.className = `leaderboard-entry ${suit.id}`;
       rootNode.dataset.suitId = suit.id;
-
-      const rankNode = document.createElement("span");
-      rankNode.className = "leaderboard-rank";
 
       const racerNode = document.createElement("img");
       racerNode.className = "leaderboard-racer";
       racerNode.src = suit.racerImage;
       racerNode.alt = `${suit.name} racer`;
-
-      const distanceNode = document.createElement("span");
-      distanceNode.className = "leaderboard-distance";
-      distanceNode.textContent = "L0";
-
-      rootNode.appendChild(rankNode);
       rootNode.appendChild(racerNode);
-      rootNode.appendChild(distanceNode);
       this.leaderboardEl.appendChild(rootNode);
 
       this.leaderboardNodes.set(suit.id, {
-        root: rootNode,
-        rank: rankNode,
-        distance: distanceNode
+        root: rootNode
       });
     });
   }
