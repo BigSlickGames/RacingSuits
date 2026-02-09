@@ -783,24 +783,27 @@ h3 {
 
 .race-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(78px, 12vw, 108px);
-  gap: clamp(0.16rem, 0.6vw, 0.4rem);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
   width: 100%;
   height: 100%;
   min-height: 0;
   flex: 1;
+  position: relative;
 }
 
 .track-board {
-  --track-rows: 11;
-  --track-cols: 4;
-  --track-side-ratio: 0.54;
-  --track-gap: clamp(0.05rem, 0.16vw, 0.12rem);
-  --track-cell-size: clamp(34px, min(9.2vw, 7.2vh), 96px);
-  --track-side-size: calc(var(--track-cell-size) * var(--track-side-ratio));
+  --track-rows: 4;
+  --track-cols: 11;
+  --track-gap: clamp(0.1rem, 0.3vw, 0.22rem);
+  --checkpoint-height: clamp(30px, 5.6vh, 52px);
   position: relative;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
+  width: 100%;
+  height: 70%;
+  align-self: center;
+  justify-self: stretch;
   min-width: 0;
   min-height: 0;
 }
@@ -808,88 +811,98 @@ h3 {
 @supports (width: 1cqw) {
   .track-board {
     container-type: size;
-    --track-row-gaps: calc(var(--track-rows) - 1);
-    --track-col-gaps: calc(var(--track-cols));
-    --track-total-cols: calc(var(--track-cols) + var(--track-side-ratio));
-    --track-fit-by-height: calc((100cqh - (var(--track-row-gaps) * var(--track-gap))) / var(--track-rows));
-    --track-fit-by-width: calc((100cqw - (var(--track-col-gaps) * var(--track-gap))) / var(--track-total-cols));
-    --track-cell-size: clamp(22px, min(var(--track-fit-by-height), var(--track-fit-by-width)), 102px);
+    --checkpoint-height: clamp(30px, 8cqh, 56px);
   }
 }
 
 .track-viewport {
   min-height: 0;
-  border-radius: 0;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  overflow: visible;
+  border-radius: clamp(12px, 1.4vw, 20px);
+  border: 1px solid rgba(195, 208, 235, 0.26);
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.08), transparent 42%),
+    linear-gradient(180deg, rgba(8, 14, 27, 0.62), rgba(3, 8, 18, 0.8));
+  padding: clamp(0.2rem, 0.5vw, 0.36rem);
+  overflow: hidden;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
+  width: 100%;
+  height: 100%;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 20px 30px rgba(0, 0, 0, 0.42);
 }
 
 .race-grid {
   position: relative;
   display: grid;
-  gap: 0;
-  width: max-content;
-  align-content: center;
-  justify-content: center;
+  gap: var(--track-gap);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: var(--checkpoint-height) repeat(4, minmax(0, 1fr));
   contain: layout paint;
 }
 
 .track-row {
   display: grid;
-  grid-template-columns: repeat(4, var(--track-cell-size)) var(--track-side-size);
+  grid-template-columns: repeat(var(--track-cols), minmax(0, 1fr));
   gap: var(--track-gap);
+  min-height: 0;
 }
 
-.track-row.finish-row,
-.track-row.start-row {
+.checkpoint-row {
+  align-items: center;
+}
+
+.lane-row {
   position: relative;
 }
 
+.lane-row::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0));
+  opacity: 0.22;
+  pointer-events: none;
+}
+
 .track-cell {
-  height: var(--track-cell-size);
-  border-radius: clamp(8px, 1.2vw, 14px);
+  border-radius: clamp(8px, 1.1vw, 12px);
   border: 1px solid rgba(255, 255, 255, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
+  min-height: 0;
 }
 
 .track-cell.lane-cell {
-  border-radius: 0;
-  border-top: 0;
-  border-bottom: 0;
-  border-left: 1px solid rgba(255, 255, 255, 0.18);
-  border-right: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: clamp(6px, 0.9vw, 10px);
+  border-color: rgba(255, 255, 255, 0.14);
   background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.09) 0 1px,
-      transparent 1px 4px
-    ),
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0)),
     var(--lane-fill, rgba(255, 255, 255, 0.08));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+    inset 0 -10px 24px rgba(0, 0, 0, 0.2);
 }
 
 .track-cell.lane-cell.lit {
-  border-color: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.26);
   background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255, 255, 255, 0.16) 0 1px,
-      transparent 1px 4px
-    ),
     linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0)),
     var(--lane-fill);
   box-shadow:
     0 0 10px var(--lane-fill),
-    0 0 16px rgba(255, 255, 255, 0.12),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.26);
+    0 0 18px rgba(255, 255, 255, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 .track-cell.lane-cell.player-lit {
@@ -916,30 +929,54 @@ h3 {
   transform: translate3d(0, 0, 0);
 }
 
+.lane-racer-icon,
+.lane-racer-sprite {
+  width: clamp(46px, 8vh, 106px);
+  height: clamp(46px, 8vh, 106px);
+  transform: translate(-50%, -50%);
+  filter:
+    drop-shadow(0 6px 9px rgba(0, 0, 0, 0.56))
+    drop-shadow(0 0 12px rgba(255, 255, 255, 0.2));
+}
+
 .lane-racer-icon {
-  width: calc(var(--track-cell-size) * 0.84);
-  height: calc(var(--track-cell-size) * 0.84);
   object-fit: contain;
-  transform: translate(-50%, -56%);
-  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.48));
 }
 
-.lane-racer-marker.player .lane-racer-icon {
-  transform: translate(-50%, -60%) scale(1.08);
+.lane-racer-sprite {
+  display: block;
+  background-image: var(--sprite-sheet);
+  background-repeat: no-repeat;
+  background-size: calc(var(--sprite-cols, 1) * 100%) calc(var(--sprite-rows, 1) * 100%);
+  background-position: 0 0;
 }
 
-.lane-racer-marker.at-start .lane-racer-icon {
-  transform: translate(-50%, -24%);
+.lane-racer-marker.player .lane-racer-icon,
+.lane-racer-marker.player .lane-racer-sprite {
+  transform: translate(-50%, -50%) scale(1.1);
 }
 
-.lane-racer-marker.at-start.player .lane-racer-icon {
-  transform: translate(-50%, -28%) scale(1.08);
+.lane-racer-marker.at-start .lane-racer-icon,
+.lane-racer-marker.at-start .lane-racer-sprite {
+  transform: translate(-38%, -50%);
 }
 
-.track-row.finish-row .track-cell.lane-cell {
-  border-top: 1px solid rgba(255, 237, 178, 0.88);
-  border-top-left-radius: clamp(8px, 1.2vw, 14px);
-  border-top-right-radius: clamp(8px, 1.2vw, 14px);
+.lane-racer-marker.at-start.player .lane-racer-icon,
+.lane-racer-marker.at-start.player .lane-racer-sprite {
+  transform: translate(-38%, -50%) scale(1.1);
+}
+
+.track-cell.lane-cell.start-cell {
+  border-left: 2px solid rgba(255, 244, 198, 0.86);
+  border-left-width: clamp(2px, 0.22vw, 4px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 0 12px rgba(255, 179, 102, 0.35);
+}
+
+.track-cell.lane-cell.finish-cell {
+  border-right: 2px solid rgba(255, 244, 198, 0.9);
+  border-right-width: clamp(2px, 0.22vw, 4px);
   background:
     linear-gradient(
       45deg,
@@ -956,64 +993,18 @@ h3 {
       #101722 75%,
       #f9fbff 75%,
       #f9fbff
-    ) 7px 7px / 14px 14px;
-  border-color: rgba(255, 237, 178, 0.88);
+    ) 7px 7px / 14px 14px,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0));
+  border-color: rgba(255, 237, 178, 0.68);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
-    0 0 14px rgba(255, 225, 145, 0.42);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.38),
+    0 0 16px rgba(255, 225, 145, 0.42);
 }
 
-.track-row.finish-row .track-cell.lane-cell.lit {
+.track-cell.lane-cell.finish-cell.lit {
   box-shadow:
     0 0 20px rgba(255, 220, 125, 0.75),
     inset 0 0 0 1px rgba(255, 255, 255, 0.68);
-}
-
-.track-row.start-row .track-cell.lane-cell {
-  border-bottom: 1px solid rgba(255, 244, 198, 0.85);
-  border-bottom-left-radius: clamp(8px, 1.2vw, 14px);
-  border-bottom-right-radius: clamp(8px, 1.2vw, 14px);
-  border-color: rgba(255, 244, 198, 0.85);
-  background:
-    radial-gradient(circle at 16% 20%, rgba(255, 97, 97, 0.45) 0 6px, transparent 6px),
-    radial-gradient(circle at 50% 20%, rgba(255, 216, 102, 0.42) 0 6px, transparent 6px),
-    radial-gradient(circle at 84% 20%, rgba(102, 209, 255, 0.45) 0 6px, transparent 6px),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.26) 0 10px, rgba(255, 255, 255, 0.08) 10px 20px),
-    linear-gradient(180deg, rgba(12, 18, 30, 0.84), rgba(5, 10, 20, 0.94));
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.26),
-    0 0 16px rgba(255, 230, 156, 0.52);
-}
-
-.track-row.start-row::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: calc(var(--track-side-size) + var(--track-gap));
-  top: calc(50% - 3px);
-  height: 6px;
-  border-radius: 999px;
-  background: repeating-linear-gradient(90deg, #ffffff 0 8px, #ff5a5a 8px 16px);
-  box-shadow: 0 0 12px rgba(255, 113, 113, 0.68);
-  pointer-events: none;
-}
-
-.track-row.start-row::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: calc(var(--track-side-size) + var(--track-gap));
-  top: clamp(3px, 0.45vw, 8px);
-  height: 5px;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 8% 50%, rgba(255, 75, 75, 0.95) 0 3px, transparent 3px),
-    radial-gradient(circle at 35% 50%, rgba(255, 209, 75, 0.95) 0 3px, transparent 3px),
-    radial-gradient(circle at 62% 50%, rgba(96, 222, 255, 0.95) 0 3px, transparent 3px),
-    radial-gradient(circle at 89% 50%, rgba(145, 255, 109, 0.95) 0 3px, transparent 3px);
-  opacity: 0.95;
-  filter: drop-shadow(0 0 6px rgba(255, 241, 186, 0.62));
-  pointer-events: none;
 }
 
 .settings-panel {
@@ -1043,11 +1034,15 @@ h3 {
 }
 
 .track-cell.side-card-cell {
-  width: var(--track-side-size);
-  min-width: var(--track-side-size);
+  height: 100%;
+  aspect-ratio: 3 / 4;
   border-radius: clamp(9px, 1.4vw, 14px);
-  font-size: 0.92rem;
+  font-size: clamp(0.72rem, 1.4vw, 0.92rem);
   font-weight: 900;
+}
+
+.checkpoint-row .track-cell.side-card-cell {
+  align-self: stretch;
 }
 
 .side-card-image {
@@ -1066,28 +1061,37 @@ h3 {
 .track-cell.side-card-cell.face-down {
   color: rgba(255, 246, 196, 0.9);
   border-color: rgba(204, 215, 235, 0.34);
-  background: repeating-linear-gradient(145deg, #473982, #473982 10px, #5d4c99 10px, #5d4c99 20px);
+  background: linear-gradient(150deg, rgba(72, 58, 131, 0.94), rgba(35, 28, 66, 0.98));
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .race-sidebar {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto;
   gap: clamp(0.12rem, 0.45vw, 0.24rem);
-  border-radius: 0;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  min-height: 0;
+  border-radius: clamp(10px, 1.1vw, 16px);
+  border: 1px solid rgba(176, 194, 223, 0.2);
+  background: linear-gradient(175deg, rgba(7, 14, 26, 0.5), rgba(3, 9, 18, 0.62));
+  backdrop-filter: blur(8px) saturate(112%);
+  padding: clamp(0.14rem, 0.45vw, 0.28rem);
+  min-height: auto;
+  position: absolute;
+  right: clamp(0.4rem, 1.2vw, 0.8rem);
+  bottom: clamp(0.4rem, 1.2vw, 0.8rem);
+  width: clamp(76px, 9vw, 112px);
+  z-index: 5;
 }
 
 .race-rankings {
-  display: grid;
-  grid-template-rows: repeat(4, clamp(52px, 7.6vh, 72px));
-  gap: clamp(0.08rem, 0.25vw, 0.16rem);
-  width: 100%;
-  height: auto;
-  align-content: start;
+  display: none !important;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .leaderboard-entry {
@@ -1209,7 +1213,7 @@ h3 {
 }
 
 .draw-card.face-down {
-  background: repeating-linear-gradient(145deg, #483a83, #483a83 14px, #6655a7 14px, #6655a7 28px);
+  background: linear-gradient(150deg, rgba(72, 58, 131, 0.95), rgba(35, 28, 66, 0.98));
 }
 
 .draw-card.flip {
@@ -1414,7 +1418,10 @@ h3 {
   z-index: 2;
   display: grid;
   place-items: center;
-  gap: 0.28rem;
+  align-content: center;
+  gap: 0.36rem;
+  width: 100%;
+  height: 100%;
 }
 
 .result-trophy {
@@ -1425,8 +1432,9 @@ h3 {
 }
 
 .result-winner-image {
-  width: min(88vw, 520px);
-  max-height: min(62dvh, 440px);
+  width: min(96vw, 900px);
+  max-width: min(100%, 900px);
+  max-height: min(74dvh, 620px);
   object-fit: contain;
   filter:
     drop-shadow(0 0 20px rgba(255, 183, 3, 0.55))
@@ -1437,6 +1445,14 @@ h3 {
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+
+.result-showcase.lose .result-trophy {
+  display: none;
+}
+
+.result-showcase.lose .result-confetti {
+  display: none;
 }
 
 .confetti-piece {
@@ -1590,7 +1606,7 @@ button,
   }
 
   .race-layout {
-    grid-template-columns: minmax(0, 1fr) clamp(62px, 18vw, 86px);
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1685,13 +1701,13 @@ button,
   }
 
   .race-layout {
-    grid-template-columns: minmax(0, 1fr) clamp(56px, 18vw, 74px);
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.18rem;
   }
 
   .track-board {
     --track-gap: 0.08rem;
-    --track-side-ratio: 0.5;
+    --checkpoint-height: clamp(24px, 4.2vh, 34px);
   }
 
   .draw-card {
@@ -1703,7 +1719,7 @@ button,
   }
 
   .result-winner-image {
-    max-height: min(50dvh, 320px);
+    max-height: min(62dvh, 420px);
   }
 
   #race-again-btn {
@@ -1725,12 +1741,12 @@ button,
   }
 
   .race-layout {
-    grid-template-columns: minmax(0, 1fr) 50px;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .track-board {
     --track-gap: 0.06rem;
-    --track-side-ratio: 0.48;
+    --checkpoint-height: clamp(22px, 3.9vh, 30px);
   }
 
   .draw-card {

@@ -25,6 +25,32 @@ function getOrderedSuitsByPosition(positions) {
   });
 }
 
+function getOrdinalLabel(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return null;
+  }
+
+  const roundedValue = Math.floor(numericValue);
+  const mod100 = roundedValue % 100;
+  if (mod100 >= 11 && mod100 <= 13) {
+    return `${roundedValue}th`;
+  }
+
+  const mod10 = roundedValue % 10;
+  if (mod10 === 1) {
+    return `${roundedValue}st`;
+  }
+  if (mod10 === 2) {
+    return `${roundedValue}nd`;
+  }
+  if (mod10 === 3) {
+    return `${roundedValue}rd`;
+  }
+
+  return `${roundedValue}th`;
+}
+
 export class ResultsScreen {
   constructor({
     screenEl,
@@ -81,6 +107,14 @@ export class ResultsScreen {
     this.confettiEl.innerHTML = pieces.join("");
   }
 
+  clearConfetti() {
+    if (!this.confettiEl) {
+      return;
+    }
+
+    this.confettiEl.innerHTML = "";
+  }
+
   getPlayerPlacement(replay, playerSuitId) {
     const finalFrame = replay?.frames?.[replay.frames.length - 1];
     if (!finalFrame || !playerSuitId) {
@@ -97,38 +131,47 @@ export class ResultsScreen {
   }
 
   show({ winnerSuitId, playerSuitId, settlement, replay }) {
-    const winner = getSuitById(winnerSuitId);
+    const winner = getSuitById(winnerSuitId) ?? SUITS[0];
     const player = playerSuitId ? getSuitById(playerSuitId) : null;
     const playerPlacement = this.getPlayerPlacement(replay, playerSuitId);
+    const playerPlacementLabel = getOrdinalLabel(playerPlacement);
     const playerWon = Boolean(settlement?.won);
 
     this.bannerEl.classList.remove("win", "lose");
     this.bannerEl.classList.add(playerWon ? "win" : "lose");
     this.bannerEl.textContent = playerWon
-      ? "YOU ARE THE WINNER!"
-      : `${winner.symbol} ${winner.name} wins!`;
+      ? "YAY! YOU WON!"
+      : `Winner: ${winner.name}`;
 
     if (this.showcaseEl) {
       this.showcaseEl.classList.toggle("win", playerWon);
       this.showcaseEl.classList.toggle("lose", !playerWon);
+      this.showcaseEl.classList.toggle("player-win", playerWon);
     }
 
     if (this.crowdEl) {
-      this.crowdEl.textContent = `👏 Crowd is cheering for ${winner.name}! 👏`;
+      this.crowdEl.textContent = playerWon
+        ? `Crowd goes wild! ${winner.name} wins!`
+        : `${winner.name} takes the win this round.`;
       this.crowdEl.classList.toggle("win", playerWon);
       this.crowdEl.classList.toggle("lose", !playerWon);
     }
 
     this.winnerImageEl.src = winner.racerImage;
     this.winnerImageEl.alt = `${winner.name} winner`;
-    this.renderConfetti();
 
     if (playerWon) {
-      this.copyEl.textContent = `You backed ${player?.name ?? "your racer"} and came #1. Race again??`;
-    } else if (playerPlacement) {
-      this.copyEl.textContent = `Oh no! You came #${playerPlacement}. Race again??`;
+      this.renderConfetti();
     } else {
-      this.copyEl.textContent = "Oh no! You missed the win. Race again??";
+      this.clearConfetti();
+    }
+
+    if (playerWon) {
+      this.copyEl.textContent = `YAY! ${player?.name ?? "Your racer"} came 1st. Race again??`;
+    } else if (playerPlacementLabel) {
+      this.copyEl.textContent = `Oh so close! You came ${playerPlacementLabel}. Race again??`;
+    } else {
+      this.copyEl.textContent = "Oh so close! You missed the win. Race again??";
     }
 
     this.screenEl.classList.add("active");

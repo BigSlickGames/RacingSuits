@@ -429,7 +429,9 @@ async function runInitialLoadScreen() {
   const preloadResults = await preloadImages([
     "./assets/racing_suits_banner.png",
     "./assets/race-screen-bg.png",
-    ...SUITS.map((suit) => suit.racerImage)
+    ...SUITS.map((suit) => suit.racerImage),
+    ...SUITS.map((suit) => suit.raceSprite?.sheet).filter(Boolean),
+    ...SUITS.flatMap((suit) => Array.isArray(suit.raceFrames) ? suit.raceFrames : [])
   ]);
 
   const elapsed = Date.now() - screenStart;

@@ -1962,6 +1962,46 @@ export const LAYOUT_ADJUSTMENTS_CONFIG = {
       positionY: "",
       origin: ""
     },
+    // Checkpoint Row (.checkpoint-row)
+    ".checkpoint-row": {
+      x: 0,
+      y: 0,
+      padding: "",
+      paddingX: "",
+      paddingY: "",
+      paddingTop: "",
+      paddingRight: "",
+      paddingBottom: "",
+      paddingLeft: "",
+      scale: 1,
+      scaleX: "",
+      scaleY: "",
+      sizeX: "",
+      sizeY: "",
+      positionX: "",
+      positionY: "",
+      origin: ""
+    },
+    // Lane Row (.lane-row)
+    ".lane-row": {
+      x: 0,
+      y: 0,
+      padding: "",
+      paddingX: "",
+      paddingY: "",
+      paddingTop: "",
+      paddingRight: "",
+      paddingBottom: "",
+      paddingLeft: "",
+      scale: 1,
+      scaleX: "",
+      scaleY: "",
+      sizeX: "",
+      sizeY: "",
+      positionX: "",
+      positionY: "",
+      origin: ""
+    },
     // Track Row Finish Row (.track-row.finish-row)
     ".track-row.finish-row": {
       x: 0,
@@ -2024,6 +2064,66 @@ export const LAYOUT_ADJUSTMENTS_CONFIG = {
     },
     // Track Cell Lane Cell (.track-cell.lane-cell)
     ".track-cell.lane-cell": {
+      x: 0,
+      y: 0,
+      padding: "",
+      paddingX: "",
+      paddingY: "",
+      paddingTop: "",
+      paddingRight: "",
+      paddingBottom: "",
+      paddingLeft: "",
+      scale: 1,
+      scaleX: "",
+      scaleY: "",
+      sizeX: "",
+      sizeY: "",
+      positionX: "",
+      positionY: "",
+      origin: ""
+    },
+    // Track Cell Camera Lane Cell (.track-cell.camera-lane-cell)
+    ".track-cell.camera-lane-cell": {
+      x: 0,
+      y: 0,
+      padding: "",
+      paddingX: "",
+      paddingY: "",
+      paddingTop: "",
+      paddingRight: "",
+      paddingBottom: "",
+      paddingLeft: "",
+      scale: 1,
+      scaleX: "",
+      scaleY: "",
+      sizeX: "",
+      sizeY: "",
+      positionX: "",
+      positionY: "",
+      origin: ""
+    },
+    // Track Cell Lane Cell Start Cell (.track-cell.lane-cell.start-cell)
+    ".track-cell.lane-cell.start-cell": {
+      x: 0,
+      y: 0,
+      padding: "",
+      paddingX: "",
+      paddingY: "",
+      paddingTop: "",
+      paddingRight: "",
+      paddingBottom: "",
+      paddingLeft: "",
+      scale: 1,
+      scaleX: "",
+      scaleY: "",
+      sizeX: "",
+      sizeY: "",
+      positionX: "",
+      positionY: "",
+      origin: ""
+    },
+    // Track Cell Lane Cell Finish Cell (.track-cell.lane-cell.finish-cell)
+    ".track-cell.lane-cell.finish-cell": {
       x: 0,
       y: 0,
       padding: "",
@@ -2124,6 +2224,26 @@ export const LAYOUT_ADJUSTMENTS_CONFIG = {
     },
     // Lane Racer Icon (.lane-racer-icon)
     ".lane-racer-icon": {
+      x: 0,
+      y: 0,
+      padding: "",
+      paddingX: "",
+      paddingY: "",
+      paddingTop: "",
+      paddingRight: "",
+      paddingBottom: "",
+      paddingLeft: "",
+      scale: 1,
+      scaleX: "",
+      scaleY: "",
+      sizeX: "",
+      sizeY: "",
+      positionX: "",
+      positionY: "",
+      origin: ""
+    },
+    // Lane Racer Sprite (.lane-racer-sprite)
+    ".lane-racer-sprite": {
       x: 0,
       y: 0,
       padding: "",

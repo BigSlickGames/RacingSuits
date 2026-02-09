@@ -58,6 +58,7 @@ export class RaceScreen {
     this.screenEl = screenEl;
     this.gridEl = gridEl;
     this.leaderboardEl = leaderboardEl;
+    this.leaderboardEnabled = Boolean(leaderboardEl);
     this.drawCardEl = drawCardEl;
     this.startSequenceEl = startSequenceEl;
 
@@ -77,11 +78,19 @@ export class RaceScreen {
     this.markerAnchors = new Map();
     this.checkpointNodes = new Map();
     this.leaderboardNodes = new Map();
+    this.spriteMarkers = new Map();
     this.currentFrame = null;
+    this.spriteAnimationFrameId = null;
+    this.spriteAnimationTimestamp = 0;
 
     this.handlers = {
       onRaceFinished: () => {}
     };
+
+    if (this.leaderboardEl) {
+      this.leaderboardEl.hidden = true;
+      this.leaderboardEl.setAttribute("aria-hidden", "true");
+    }
 
     window.addEventListener("resize", () => {
       this.recalculateAnchors();
@@ -94,6 +103,7 @@ export class RaceScreen {
 
   show({ playerSuitId, ante, raceResult, replay, instantResolveEnabled }) {
     this.stopRaceLoop();
+    this.screenEl.classList.remove("race-live");
     this.playerSuitId = playerSuitId;
     this.ante = ante;
     this.trackLength = raceResult.config.trackLength;
@@ -102,7 +112,9 @@ export class RaceScreen {
     this.screenEl.classList.add("active");
 
     this.buildGrid(raceResult.frames[0]);
-    this.ensureLeaderboardNodes();
+    if (this.leaderboardEnabled) {
+      this.ensureLeaderboardNodes();
+    }
     this.applyFrame(raceResult.frames[0], false);
     this.setDrawCard(null);
 
@@ -125,50 +137,57 @@ export class RaceScreen {
   buildGrid(initialFrame) {
     const trackBoardEl = this.gridEl.closest(".track-board");
     if (trackBoardEl) {
-      trackBoardEl.style.setProperty("--track-rows", String(this.trackLength + 1));
-      trackBoardEl.style.setProperty("--track-cols", String(SUITS.length));
+      trackBoardEl.style.setProperty("--track-rows", String(SUITS.length));
+      trackBoardEl.style.setProperty("--track-cols", String(this.trackLength + 1));
     }
 
-    const rowMarkup = [];
+    const checkpointCellsMarkup = [];
+    for (let length = 0; length <= this.trackLength; length += 1) {
+      if (length === 0 || length === this.trackLength) {
+        checkpointCellsMarkup.push(`<div class="track-cell side-card-cell no-card" aria-hidden="true"></div>`);
+        continue;
+      }
 
-    for (let length = this.trackLength; length >= 0; length -= 1) {
-      const isFinish = length === this.trackLength;
-      const isStart = length === 0;
-      const rowClasses = [
-        "track-row",
-        isFinish ? "finish-row" : "",
-        isStart ? "start-row" : ""
-      ].join(" ").trim();
+      checkpointCellsMarkup.push(`
+        <div class="track-cell side-card-cell face-down" data-checkpoint-length="${length}" title="Length ${length} checkpoint">?</div>
+      `);
+    }
 
-      const laneCellsMarkup = SUITS.map((suit) => {
-        return `
+    const laneRowsMarkup = SUITS.map((suit) => {
+      const laneCellsMarkup = [];
+      for (let length = 0; length <= this.trackLength; length += 1) {
+        const cellClasses = [
+          "track-cell",
+          "lane-cell",
+          "camera-lane-cell",
+          suit.id,
+          length === 0 ? "start-cell" : "",
+          length === this.trackLength ? "finish-cell" : ""
+        ].join(" ").trim();
+
+        laneCellsMarkup.push(`
           <div
-            class="track-cell lane-cell ${suit.id}"
+            class="${cellClasses}"
             style="--lane-fill: ${getLaneToneColor(suit.id, false)};"
             data-suit-id="${suit.id}"
             data-length="${length}"
           ></div>
-        `;
-      }).join("");
-
-      let sideCardMarkup = "";
-      if (isStart || isFinish) {
-        sideCardMarkup = `<div class="track-cell side-card-cell no-card" aria-hidden="true"></div>`;
-      } else {
-        sideCardMarkup = `
-          <div class="track-cell side-card-cell face-down" data-checkpoint-length="${length}" title="Length ${length} checkpoint">?</div>
-        `;
+        `);
       }
 
-      rowMarkup.push(`
-        <div class="${rowClasses}" data-row-length="${length}">
-          ${laneCellsMarkup}
-          ${sideCardMarkup}
+      return `
+        <div class="track-row lane-row ${suit.id}" data-suit-id="${suit.id}">
+          ${laneCellsMarkup.join("")}
         </div>
-      `);
-    }
+      `;
+    }).join("");
 
-    this.gridEl.innerHTML = rowMarkup.join("");
+    this.gridEl.innerHTML = `
+      <div class="track-row checkpoint-row" aria-label="Checkpoint cards">
+        ${checkpointCellsMarkup.join("")}
+      </div>
+      ${laneRowsMarkup}
+    `;
     this.gridEl.classList.add("race-grid-ready");
 
     this.cacheGridNodes();
@@ -211,14 +230,135 @@ export class RaceScreen {
     this.gridEl.appendChild(markerLayer);
 
     this.markerNodes.clear();
+    this.spriteMarkers.clear();
 
     SUITS.forEach((suit) => {
       const markerNode = document.createElement("div");
       markerNode.className = `lane-racer-marker${suit.id === this.playerSuitId ? " player" : ""}`;
       markerNode.dataset.suitId = suit.id;
-      markerNode.innerHTML = `<img class="lane-racer-icon" src="${suit.racerImage}" alt="" aria-hidden="true">`;
+      if (Array.isArray(suit.raceFrames) && suit.raceFrames.length > 0) {
+        const frames = suit.raceFrames
+          .map((framePath) => String(framePath))
+          .filter((framePath) => framePath.length > 0);
+        const frameCount = Math.max(1, frames.length);
+        const fps = Math.max(1, Number(suit.raceFramesFps) || 12);
+
+        markerNode.classList.add("uses-frame-cycle");
+        markerNode.innerHTML = `<img class="lane-racer-icon lane-racer-frame ${suit.id}" src="${frames[0]}" alt="" aria-hidden="true">`;
+        const frameNode = markerNode.querySelector(".lane-racer-frame");
+        if (frameNode) {
+          this.spriteMarkers.set(suit.id, {
+            mode: "frames",
+            node: frameNode,
+            frames,
+            frameCount,
+            fps,
+            frame: 0,
+            accumulatorMs: 0
+          });
+          this.setSpriteFrame(this.spriteMarkers.get(suit.id), 0);
+        }
+      } else if (suit.raceSprite) {
+        const columns = Math.max(1, Number(suit.raceSprite.columns) || 1);
+        const rows = Math.max(1, Number(suit.raceSprite.rows) || 1);
+        const frameCount = Math.max(1, Number(suit.raceSprite.frames) || (columns * rows));
+        const fps = Math.max(1, Number(suit.raceSprite.fps) || 12);
+
+        markerNode.classList.add("uses-sprite");
+        markerNode.innerHTML = `<span class="lane-racer-sprite ${suit.id}" aria-hidden="true"></span>`;
+        const spriteNode = markerNode.querySelector(".lane-racer-sprite");
+        if (spriteNode) {
+          spriteNode.style.setProperty("--sprite-sheet", `url("${suit.raceSprite.sheet}")`);
+          spriteNode.style.setProperty("--sprite-cols", String(columns));
+          spriteNode.style.setProperty("--sprite-rows", String(rows));
+          this.spriteMarkers.set(suit.id, {
+            mode: "sprite-sheet",
+            node: spriteNode,
+            columns,
+            rows,
+            frameCount: Math.min(frameCount, columns * rows),
+            fps,
+            frame: 0,
+            accumulatorMs: 0
+          });
+          this.setSpriteFrame(this.spriteMarkers.get(suit.id), 0);
+        }
+      } else {
+        markerNode.innerHTML = `<img class="lane-racer-icon" src="${suit.racerImage}" alt="" aria-hidden="true">`;
+      }
       markerLayer.appendChild(markerNode);
       this.markerNodes.set(suit.id, markerNode);
+    });
+  }
+
+  setSpriteFrame(spriteState, nextFrame) {
+    if (!spriteState || !spriteState.node) {
+      return;
+    }
+
+    const normalizedFrame = ((nextFrame % spriteState.frameCount) + spriteState.frameCount) % spriteState.frameCount;
+    if (spriteState.mode === "frames") {
+      spriteState.node.src = spriteState.frames[normalizedFrame];
+      spriteState.frame = normalizedFrame;
+      return;
+    }
+
+    const column = normalizedFrame % spriteState.columns;
+    const row = Math.floor(normalizedFrame / spriteState.columns);
+    const xPercent = spriteState.columns > 1 ? (column / (spriteState.columns - 1)) * 100 : 0;
+    const yPercent = spriteState.rows > 1 ? (row / (spriteState.rows - 1)) * 100 : 0;
+
+    spriteState.node.style.backgroundPosition = `${xPercent}% ${yPercent}%`;
+    spriteState.frame = normalizedFrame;
+  }
+
+  startSpriteAnimation() {
+    this.stopSpriteAnimation(false);
+    if (this.spriteMarkers.size === 0) {
+      return;
+    }
+
+    this.spriteMarkers.forEach((spriteState) => {
+      spriteState.frame = 0;
+      spriteState.accumulatorMs = 0;
+      this.setSpriteFrame(spriteState, 0);
+    });
+
+    this.spriteAnimationTimestamp = window.performance.now();
+
+    const animateSprites = (timestamp) => {
+      const deltaMs = Math.max(0, timestamp - this.spriteAnimationTimestamp);
+      this.spriteAnimationTimestamp = timestamp;
+
+      this.spriteMarkers.forEach((spriteState) => {
+        const frameDurationMs = 1000 / spriteState.fps;
+        spriteState.accumulatorMs += deltaMs;
+
+        while (spriteState.accumulatorMs >= frameDurationMs) {
+          spriteState.accumulatorMs -= frameDurationMs;
+          this.setSpriteFrame(spriteState, spriteState.frame + 1);
+        }
+      });
+
+      this.spriteAnimationFrameId = window.requestAnimationFrame(animateSprites);
+    };
+
+    this.spriteAnimationFrameId = window.requestAnimationFrame(animateSprites);
+  }
+
+  stopSpriteAnimation(resetFrame = true) {
+    if (this.spriteAnimationFrameId) {
+      window.cancelAnimationFrame(this.spriteAnimationFrameId);
+      this.spriteAnimationFrameId = null;
+    }
+
+    if (!resetFrame) {
+      return;
+    }
+
+    this.spriteMarkers.forEach((spriteState) => {
+      spriteState.accumulatorMs = 0;
+      this.setSpriteFrame(spriteState, 0);
     });
   }
 
@@ -257,7 +397,9 @@ export class RaceScreen {
     this.applyLaneLighting(frame.positions);
     this.applyCheckpointState(frame.checkpoints);
     this.updateMarkerPositions(frame.positions, animate);
-    this.renderLeaderboard(frame.positions, animate);
+    if (this.leaderboardEnabled) {
+      this.renderLeaderboard(frame.positions, animate);
+    }
   }
 
   applyLaneLighting(positions) {
@@ -323,6 +465,10 @@ export class RaceScreen {
   }
 
   renderLeaderboard(positions, animate) {
+    if (!this.leaderboardEnabled || !this.leaderboardEl) {
+      return;
+    }
+
     this.ensureLeaderboardNodes();
     const orderedSuits = getOrderedSuitsByPosition(positions);
     const orderedNodes = [];
@@ -349,6 +495,10 @@ export class RaceScreen {
   }
 
   ensureLeaderboardNodes() {
+    if (!this.leaderboardEnabled || !this.leaderboardEl) {
+      return;
+    }
+
     if (this.leaderboardNodes.size === SUITS.length) {
       return;
     }
@@ -394,6 +544,8 @@ export class RaceScreen {
     }
 
     this.clearStartSequence();
+    this.screenEl.classList.add("race-live");
+    this.startSpriteAnimation();
 
     if (this.instantResolveEnabled) {
       this.resolveRaceInstantly();
@@ -467,6 +619,8 @@ export class RaceScreen {
       clearTimeout(this.playbackTimerId);
       this.playbackTimerId = null;
     }
+    this.screenEl.classList.remove("race-live");
+    this.stopSpriteAnimation(true);
     this.clearStartSequence();
   }
 
